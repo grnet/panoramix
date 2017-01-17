@@ -1,0 +1,22 @@
+Panoramix Demo
+==============
+
+This directory contains a demo for each supported backend: 'gpg', 'zeus',
+and 'sphinxmix'.
+
+First initialize the mixnet database with
+
+  ./demo/init.sh
+
+and then start the server for the preferred backend in a terminal with:
+
+  ./demo/launch-<backend>.sh
+
+In another terminal, run the client-side demo; for 'gpg' or 'sphinxmix':
+
+  ./demo/demo-<backend>.sh
+
+For 'zeus', an extended interactive evoting demo is included that involves
+two users: 'peer1' and 'peer2'. In two separate terminals, run:
+
+  ./demo/demo-zeus.sh <peer_name>

@@ -1,0 +1,9 @@
+{"CRYPTO_BACKEND": "panoramix.backends.sphinxmix_backend",
+ "CRYPTO_PARAMS": {
+  "GROUP": 713,
+  "HEADER_LEN": 192,
+  "BODY_LEN": 1024
+ },
+ "SECRET": "5cbe4e3da463a3812b9e97ff7b72f652bd26d6e935254891594b2497",
+ "PUBLIC": "030e523aae1865457a73174ecc94d91df47440202984f0fd471e98f1a6"
+}

@@ -1,0 +1,41 @@
+Panoramix mixnet server and client
+==================================
+
+Installation
+------------
+
+In a virtualenv, run:
+
+  pip install -r requirements.txt
+  python setup.py install
+
+This packages includes three cryptographic backends: 'gpg', 'zeus', and
+'sphinxmix'. In order to use them, you must install the respective
+dependencies with:
+
+  pip install -r requirements_<backend>.txt
+
+
+Demo
+----
+
+For a demonstration of Panoramix workflow, see demo/README.
+
+
+Copyright and license
+---------------------
+
+Copyright (C) 2016-2017 GRNET S.A.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.

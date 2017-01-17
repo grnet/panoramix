@@ -1,0 +1,1 @@
+panoramix_django/manage.py
