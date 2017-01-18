@@ -1,48 +1,20 @@
 from __future__ import unicode_literals
 
 import sys
-reload(sys)
-sys.setdefaultencoding('UTF-8')
 
 import json
-import hashlib
-from apimas.modeling.clients import ApimasClientAdapter
-
-from panoramix import canonical
 from panoramix import utils
-from panoramix.config import get_client_backend, cfg
+from panoramix.config import cfg
+import panoramix.client as client_lib
+from panoramix.client import mk_panoramix_client
+from panoramix import canonical
 
 from cliff.command import Command
 from cliff.show import ShowOne
 from cliff.lister import Lister
 
-backend = get_client_backend()
-
-
-from panoramix.spec import SPEC, ROOT as DEFAULT_ROOT
-
-ROOT = cfg.get("CATALOG_URL", DEFAULT_ROOT)
-client_gen = ApimasClientAdapter(ROOT)
-client_gen.construct(SPEC)
-client_gen.apply()
-clients =client_gen.get_clients()
-
-peers = clients["peers"]
-contributions = clients["contributions"]
-negotiations = clients["negotiations"]
-endpoints = clients["endpoints"]
-messages_client = clients["messages"]
-
-
-INBOX = "INBOX"
-OUTBOX = "OUTBOX"
-PROCESSBOX = "PROCESSBOX"
-ACCEPTED = "ACCEPTED"
-
-
-def mk_negotiation_hyperlink(negotiation_id):
-    endpoint = negotiations.endpoint.rstrip('/')
-    return endpoint + '/' + negotiation_id + '/'
+reload(sys)
+sys.setdefaultencoding('UTF-8')
 
 
 def safe_json_loads(s):
@@ -51,47 +23,6 @@ def safe_json_loads(s):
     except ValueError:
         print >> sys.stderr, s
         raise
-
-
-def mk_info(resource, operation, ident=None):
-    info = {
-        "resource": resource,
-        "operation": operation,
-    }
-    if ident is not None:
-        info["id"] = ident
-    return info
-
-
-def tag_reference(dest):
-    return ["ref", dest]
-
-
-def tag_value(value):
-    return ["val", value]
-
-
-T_STRUCTURAL = "structural"
-
-
-def mk_by_consensus(consensus_id):
-    return {
-        "consensus_id": consensus_id,
-        "consensus_type": T_STRUCTURAL,
-    }
-
-
-def mk_signed_request(attrs):
-    mixnet_body = canonical.to_canonical(attrs)
-    signature = backend.sign(mixnet_body)
-    key_data = backend.get_key_data()
-    meta = "meta"
-    assert meta not in attrs
-    attrs[meta] = {
-        "signature": signature,
-        "key_data": key_data,
-    }
-    return attrs
 
 
 def filter_data_only(lst):
@@ -115,7 +46,8 @@ class key_show(ShowOne):
     """ Show your crypto key """
 
     def take_action(self, parsed_args):
-        info = backend.get_key_info()
+        client = mk_panoramix_client(cfg)
+        info = client.crypto_client.get_key_info()
         return info.keys(), info.values()
 
 
@@ -140,15 +72,11 @@ class config_list(ShowOne):
         return _cfg.keys(), _cfg.values()
 
 
-def hash_dict_wrap(message_hashes):
-    return [{"hash": mh} for mh in sorted(message_hashes)]
-
-
 class hashes_wrap(Command):
     def take_action(self, parsed_args):
         hashes = [line[:-1] for line in sys.stdin]
         wrapped_hash_log = {
-            "message_hashes": hash_dict_wrap(hashes)
+            "message_hashes": client_lib.hash_dict_wrap(hashes)
         }
         print json.dumps(wrapped_hash_log)
 
@@ -195,23 +123,6 @@ class NegotiationCommand(Command):
         parser.add_argument("--accept", action="store_true", default=False)
         return parser
 
-    def run_action(self, vargs, callpoint, resource_id=None):
-        negotiation_id = vargs["negotiation_id"]
-        accept = vargs["accept"]
-        attrs = self.mk_attrs(vargs)
-        if negotiation_id:
-            r = run_contribution(negotiation_id, attrs, accept)
-        else:
-            request = mk_signed_request(attrs)
-            kwargs = {"data": request}
-            if resource_id is not None:
-                kwargs["resource_id"] = resource_id
-            r = callpoint(**kwargs)
-        outp = r.text
-        if outp:
-            outp = safe_json_loads(outp)
-        return bool(negotiation_id), outp
-
 
 class peer_create(NegotiationCommand):
     """ Create a new peer """
@@ -222,48 +133,21 @@ class peer_create(NegotiationCommand):
         add_arguments(parser, args)
         return parser
 
-    def mk_attrs(self, vargs):
+    def take_action(self, parsed_args):
+        client = mk_panoramix_client(cfg)
+        vargs = vars(parsed_args)
         consensus_id = vargs["consensus_id"]
+        negotiation_id = vargs["negotiation_id"]
+        accept = vargs["accept"]
         name = vargs["name"]
         if name is None:
             name = cfg.get("NAME")
         name = utils.to_unicode(name)
-        key_type = backend.get_key_type()
         owners = vargs["owners"]
         owners = owners.split(',') if owners else []
-        owners_d = [{"owner_key_id": owner} for owner in owners]
-        key_file = vargs["key_file"]
-        if key_file:
-            with open(key_file) as f:
-                key_specs = json.load(f)
-                key_data = key_specs["key_data"]
-        elif not owners:
-            key_data = backend.get_key_data()
-        else:
-            key_data = backend.combine_keys(owners)
-        key_id = backend.get_key_id_from_key_data(key_data)
-        crypto_params = backend.get_crypto_params()
-        info = mk_info("peer", "create")
-        data = {
-            "name": name,
-            "peer_id": key_id,
-            "key_data": key_data,
-            "key_type": key_type,
-            "crypto_params": crypto_params,
-            "owners": owners_d,
-            "status": "READY",
-        }
-        attrs = {
-            "info": info,
-            "data": data,
-        }
-        if consensus_id is not None:
-            attrs["by_consensus"] = mk_by_consensus(consensus_id)
-        return attrs
 
-    def take_action(self, parsed_args):
-        vargs = vars(parsed_args)
-        is_contrib, d = self.run_action(vargs, peers.create)
+        is_contrib, d = client.peer_create(
+            name, True, owners, consensus_id, negotiation_id, accept)
         id_key = "id" if is_contrib else "peer_id"
         print("%s" % d["data"][id_key])
 
@@ -280,10 +164,8 @@ class peer_import(Command):
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         peer_id = vargs["peer_id"]
-        r = peers.retrieve(peer_id)
-        d = safe_json_loads(r.text)["data"]
-        public_key = d["key_data"]
-        backend.register_key(public_key)
+        client = mk_panoramix_client(cfg)
+        client.peer_import(peer_id)
         m = "Imported public key for %s in your local registry" % peer_id
         print(m)
 
@@ -300,8 +182,8 @@ class peer_info(ShowOne):
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         peer_id = vargs["peer_id"]
-        r = peers.retrieve(peer_id)
-        d = safe_json_loads(r.text)["data"]
+        client = mk_panoramix_client(cfg)
+        d = client.peer_info(peer_id)
         return d.keys(), d.values()
 
 
@@ -309,7 +191,8 @@ class peer_list(Lister):
     """ List all peers """
 
     def take_action(self, parsed_args):
-        r = peers.list()
+        client = mk_panoramix_client(cfg)
+        r = client.clients.peers.list()
         ps = safe_json_loads(r.text)
         return from_list_of_dict(filter_data_only(ps))
 
@@ -318,14 +201,8 @@ class negotiation_create(Command):
     """ Initiate a new negotiation process """
 
     def take_action(self, parsed_args):
-        request = {}
-        payload = {
-            "info": mk_info("negotiation", "create"),
-            "data": {},
-        }
-        request = mk_signed_request(payload)
-        r = negotiations.create(data=request)
-        neg_dict = safe_json_loads(r.text)["data"]
+        client = mk_panoramix_client(cfg)
+        neg_dict = client.negotiation_create()
         neg_id = neg_dict["id"]
         print(neg_id)
 
@@ -334,7 +211,8 @@ class negotiation_list(Lister):
     """ List negotiations """
 
     def take_action(self, parsed_args):
-        r = negotiations.list()
+        client = mk_panoramix_client(cfg)
+        r = client.clients.negotiations.list()
         ps = safe_json_loads(r.text)
         return from_list_of_dict(filter_data_only(ps))
 
@@ -351,8 +229,8 @@ class negotiation_info(ShowOne):
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         negotiation_id = vargs["negotiation_id"]
-        r = negotiations.retrieve(negotiation_id)
-        neg = safe_json_loads(r.text)["data"]
+        client = mk_panoramix_client(cfg)
+        neg = client.negotiation_info(negotiation_id)
         return neg.keys(), neg.values()
 
 
@@ -366,11 +244,8 @@ class contribution_list(Lister):
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         negotiation_id = vargs["negotiation_id"]
-        params={"negotiation": negotiation_id}
-
-        r = contributions.list(params=params)
-        contribs = filter_data_only(safe_json_loads(r.text))
-
+        client = mk_panoramix_client(cfg)
+        contribs = client.contribution_list(negotiation_id)
         listing = []
 
         for contrib in contribs:
@@ -398,36 +273,9 @@ class contribution_accept(Command):
         vargs = vars(parsed_args)
         negotiation_id = vargs["negotiation_id"]
         contribution_id = int(vargs["contribution_id"])
-        data = {"id": contribution_id, "negotiation": negotiation_id}
-        r = contributions.retrieve(contribution_id, params=data)
-        contrib = safe_json_loads(r.text)["data"]
-        realtext = canonical.from_canonical(
-            canonical.from_unicode(contrib["text"]))
-        body = realtext["body"]
-        r = run_contribution(negotiation_id, body, True)
-        d = safe_json_loads(r.text)["data"]
+        client = mk_panoramix_client(cfg)
+        d = client.contribution_accept(negotiation_id, contribution_id)
         print("%s" % d["id"])
-
-
-def run_contribution(negotiation_id, body, accept):
-    meta = {}
-    meta["accept"] = accept
-    text = {"body": body,
-            "meta": meta}
-    canonical_text = canonical.to_canonical(text)
-    signature = backend.sign(canonical_text)
-    payload = {
-        "info": mk_info("contribution", "create"),
-        "data": {
-            "negotiation": mk_negotiation_hyperlink(negotiation_id),
-            "text": canonical_text,
-            "signature": signature,
-            "signer_key_id": backend.get_keyid()
-        },
-    }
-    request = mk_signed_request(payload)
-    r = contributions.create(data=request)
-    return r
 
 
 class negotiation_contribute(Command):
@@ -445,7 +293,8 @@ class negotiation_contribute(Command):
         negotiation_id = vargs["negotiation_id"]
         body = vargs["body"]
         accept = vargs["accept"]
-        r = run_contribution(negotiation_id, body, accept)
+        client = mk_panoramix_client(cfg)
+        r = client.run_contribution(negotiation_id, body, accept)
         print(r.text)
 
 
@@ -461,7 +310,9 @@ class consensus_info(ShowOne):
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         consensus_id = vargs["consensus_id"]
-        r = negotiations.list(params={"consensus": consensus_id})
+        client = mk_panoramix_client(cfg)
+        r = client.clients.negotiations.list(
+            params={"consensus": consensus_id})
         conses = safe_json_loads(r.text)
         assert len(conses) == 1
         cons = conses[0]["data"]
@@ -481,7 +332,8 @@ class endpoint_create(NegotiationCommand):
                             nargs=2, metavar=("KEY", "VALUE"))
         return parser
 
-    def mk_attrs(self, vargs):
+    def take_action(self, parsed_args):
+        vargs = vars(parsed_args)
         peer_id = vargs["peer_id"]
         endpoint_id = vargs["endpoint_id"]
         endpoint_type = vargs["endpoint_type"]
@@ -491,26 +343,14 @@ class endpoint_create(NegotiationCommand):
         size_max = int(vargs["size_max"])
         description = vargs["description"] or ""
         consensus_id = vargs["consensus_id"]
-        attrs = {
-            "info": mk_info("endpoint", "create"),
-            "data": {
-                "endpoint_id": endpoint_id,
-                "peer_id": peer_id,
-                "endpoint_type": endpoint_type,
-                "endpoint_params": endpoint_params,
-                "description": description,
-                "size_min": size_min,
-                "size_max": size_max,
-                "status": "OPEN",
-            },
-        }
-        if consensus_id is not None:
-            attrs["by_consensus"] = mk_by_consensus(consensus_id)
-        return attrs
+        negotiation_id = vargs["negotiation_id"]
+        accept = vargs["accept"]
 
-    def take_action(self, parsed_args):
-        vargs = vars(parsed_args)
-        is_contrib, d = self.run_action(vargs, endpoints.create)
+        client = mk_panoramix_client(cfg)
+        is_contrib, d = client.endpoint_create(
+            endpoint_id, peer_id, endpoint_type, endpoint_params,
+            size_min, size_max, description, consensus_id,
+            negotiation_id, accept)
         id_key = "id" if is_contrib else "endpoint_id"
         print("%s" % d["data"][id_key])
 
@@ -526,9 +366,9 @@ class endpoint_info(ShowOne):
 
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
-        peer_id = vargs["endpoint_id"]
-        r = endpoints.retrieve(peer_id)
-        d = safe_json_loads(r.text)["data"]
+        endpoint_id = vargs["endpoint_id"]
+        client = mk_panoramix_client(cfg)
+        d = client.endpoint_info(endpoint_id)
         return d.keys(), d.values()
 
 
@@ -544,39 +384,10 @@ class endpoint_list(Lister):
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         peer_id = vargs["peer_id"]
-        r = endpoints.list(params={"peer_id": peer_id})
+        client = mk_panoramix_client(cfg)
+        r = client.clients.endpoints.list(params={"peer_id": peer_id})
         cs = safe_json_loads(r.text)
         return from_list_of_dict(filter_data_only(cs))
-
-
-def hash_message(text, sender, recipient):
-    hasher = hashlib.sha256()
-    hasher.update(text)
-    hasher.update(sender)
-    hasher.update(recipient)
-    return hasher.hexdigest()
-
-
-def prepare_send_message(
-        endpoint_id, box, text, sender, recipient, send_hash=False):
-    data = {
-        "box": box,
-        "endpoint_id": endpoint_id,
-        "text": text,
-        "sender": sender,
-        "recipient": recipient,
-    }
-
-    msg_hash = hash_message(text, sender, recipient)
-    if send_hash:
-        data["message_hash"] = msg_hash
-
-    attrs = {
-        "info": mk_info("message", "create"),
-        "data": data,
-    }
-    request = mk_signed_request(attrs)
-    return request, msg_hash
 
 
 class message_send(Command):
@@ -594,12 +405,8 @@ class message_send(Command):
         recipients = recipients.split(',')
         endpoint_id = vargs["endpoint_id"]
         data = vargs["data"]
-        enc_data = backend.encrypt(data, recipients)
-        send_to = recipients[0]
-        request, _ = prepare_send_message(
-            endpoint_id, INBOX, enc_data, backend.get_keyid(), send_to)
-        r = messages_client.create(data=request)
-        d = safe_json_loads(r.text)
+        client = mk_panoramix_client(cfg)
+        d = client.message_send(endpoint_id, data, recipients)
         print("%s" % d["data"]["id"])
 
 
@@ -613,36 +420,22 @@ class EndpointAction(NegotiationCommand):
         add_arguments(parser, args)
         return parser
 
-    def mk_attrs(self, vargs):
-        endpoint_id = vargs["endpoint_id"]
-        from_log = vargs["from_log"]
-        with open(from_log) as f:
-            log = json.load(f)
-
-        on_last_consensus_id = vargs.get("on_last_consensus_id")
-        consensus_id = vargs.get("consensus_id")
-        info = mk_info("endpoint", "partial_update", endpoint_id)
-        if on_last_consensus_id is not None:
-            info["on_last_consensus_id"] = on_last_consensus_id
-
-        data = {"status": self.STATUS}
-        data.update(log)
-
-        attrs = {
-            "info": info,
-            "data": data,
-        }
-
-        if consensus_id is not None:
-            attrs["by_consensus"] = mk_by_consensus(consensus_id)
-        return attrs
-
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         endpoint_id = vargs["endpoint_id"]
-        is_contrib, d = self.run_action(
-            vargs, endpoints.partial_update, resource_id=endpoint_id)
-        id_key = "id" if is_contrib else "peer_id"
+        from_log = vargs["from_log"]
+        with open(from_log) as f:
+            properties = json.load(f)
+        on_last_consensus_id = vargs.get("on_last_consensus_id")
+        consensus_id = vargs.get("consensus_id")
+        negotiation_id = vargs["negotiation_id"]
+        accept = vargs["accept"]
+
+        client = mk_panoramix_client(cfg)
+        is_contrib, d = client.endpoint_action(
+            endpoint_id, self.STATUS, properties, on_last_consensus_id,
+            consensus_id, negotiation_id, accept)
+        id_key = "id" if is_contrib else "endpoint_id"
         print("%s" % d["data"][id_key])
 
 
@@ -654,14 +447,6 @@ class inbox_close(EndpointAction):
 class processed_ack(EndpointAction):
     """ acknowledge an endpoint's outbox """
     STATUS = "PROCESSED"
-
-
-def compute_messages_hash(msg_hashes):
-    sorted_hashes = sorted(msg_hashes)
-    hasher = hashlib.sha256()
-    for msg_hash in sorted_hashes:
-        hasher.update(msg_hash)
-        return hasher.hexdigest()
 
 
 class inbox_process(Command):
@@ -681,38 +466,13 @@ class inbox_process(Command):
         upload = vargs["upload"]
         peer_id = vargs["peer_id"]
         endpoint_id = vargs["endpoint_id"]
-        endpoint_resp = endpoints.retrieve(endpoint_id)
-        endpoint = safe_json_loads(endpoint_resp.text)["data"]
 
-        r = messages_client.list(params={
-            "endpoint_id": endpoint_id, "box": ACCEPTED})
-        messages = filter_data_only(safe_json_loads(r.text))
-        if not messages:
-            print("No messages")
-            return
-        messages_text = [m["text"] for m in messages]
-        processed_data, proof = backend.process(endpoint, messages_text)
-        requests = []
-        msg_hashes = []
-        for recipient, text in processed_data:
-            if recipient is None:
-                recipient = "dummy_next_recipient"
-            request, msg_hash = prepare_send_message(
-                endpoint_id, PROCESSBOX, text,
-                peer_id, recipient, send_hash=False)
-            requests.append(request)
-            msg_hashes.append(msg_hash)
+        client = mk_panoramix_client(cfg)
+        responses, process_log = client.inbox_process(
+            endpoint_id, peer_id, upload)
 
-        if upload:
-            for request in requests:
-                r = messages_client.create(data=request)
-                d = safe_json_loads(r.text)
-                print("%s" % d["data"]["id"])
-
-        process_log = {
-            "message_hashes": hash_dict_wrap(msg_hashes),
-            "process_proof": canonical.to_canonical(proof),
-        }
+        for response in responses:
+            print("%s" % response["data"]["id"])
         with open(process_log_file, "w") as f:
             json.dump(process_log, f)
         print("Wrote process log in '%s'." % process_log_file)
@@ -730,30 +490,29 @@ class BoxLister(Lister):
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         endpoint_id = vargs["endpoint_id"]
-        r = messages_client.list(params={
-            "endpoint_id": endpoint_id, "box": self.BOX})
-        ms = safe_json_loads(r.text)
-        return from_list_of_dict(filter_data_only(ms))
+        client = mk_panoramix_client(cfg)
+        ms = client.box_list(endpoint_id, self.BOX)
+        return from_list_of_dict(ms)
 
 
 class inbox_list(BoxLister):
     """ List messages of a cycle inbox """
-    BOX = INBOX
+    BOX = client_lib.INBOX
 
 
 class accepted_list(BoxLister):
     """ List messages accepted by a cycle """
-    BOX = ACCEPTED
+    BOX = client_lib.ACCEPTED
 
 
 class processed_list(BoxLister):
     """ List messages processed by a cycle """
-    BOX = PROCESSBOX
+    BOX = client_lib.PROCESSBOX
 
 
 class outbox_list(BoxLister):
     """ List messages of a cycle outbox """
-    BOX = OUTBOX
+    BOX = client_lib.OUTBOX
 
 
 class outbox_forward(Command):
@@ -767,20 +526,10 @@ class outbox_forward(Command):
         vargs = vars(parsed_args)
         from_endpoint_id = vargs["from_endpoint_id"]
         to_endpoint_id = vargs["to_endpoint_id"]
-
-        r = messages_client.list(params={
-            "endpoint_id": from_endpoint_id, "box": OUTBOX})
-        messages = filter_data_only(safe_json_loads(r.text))
-        if not messages:
-            print("No messages")
+        client = mk_panoramix_client(cfg)
+        responses = client.outbox_forward(from_endpoint_id, to_endpoint_id)
+        if not responses:
+            print "No messages"
             return
-        for message in messages:
-            request, msg_hash = prepare_send_message(
-                to_endpoint_id,
-                INBOX,
-                message["text"],
-                message["sender"],
-                message["recipient"])
-            r = messages_client.create(data=request)
-            d = safe_json_loads(r.text)
-            print("%s" % d["data"]["id"])
+        for response in responses:
+            print("%s" % response["data"]["id"])

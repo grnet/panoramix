@@ -65,8 +65,3 @@ def get_backend():
 def get_server_backend():
     crypto_module = get_backend()
     return crypto_module.get_server(cfg)
-
-
-def get_client_backend():
-    crypto_module = get_backend()
-    return crypto_module.get_client(cfg)
