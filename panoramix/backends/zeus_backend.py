@@ -292,8 +292,12 @@ def mk_default_registry_path(public):
     return os.path.expanduser("~/.panoramixregistry." + key_id)
 
 
+def get_default_crypto_params():
+    return core._default_crypto
+
+
 def get_client(config):
-    crypto_params = config.get("CRYPTO_PARAMS", core._default_crypto)
+    crypto_params = config.get("CRYPTO_PARAMS", get_default_crypto_params())
     key_settings = config.get("KEY", {})
     public = key_settings.get("PUBLIC")
     secret = key_settings.get("SECRET")
@@ -301,3 +305,23 @@ def get_client(config):
     if registry_path is None:
         registry_path = mk_default_registry_path(public)
     return Client(crypto_params, registry_path, public, secret)
+
+
+def create_key(params, secret=None):
+    modulus = params.modulus
+    generator = params.generator
+    order = params.order
+    if secret is None:
+        secret = core.get_random_int(1, order)
+    secret = secret % order
+    public = core.pow(generator, secret, modulus)
+    return secret, public
+
+
+KEY_SETTING_NAMES = ["SECRET", "PUBLIC"]
+
+
+def create_key_settings(crypto_params):
+    params = make_zeus_params(crypto_params)
+    secret, public = create_key(params)
+    return {"SECRET": secret, "PUBLIC": public}
