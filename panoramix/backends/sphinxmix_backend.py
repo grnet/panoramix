@@ -1,7 +1,6 @@
 from binascii import unhexlify
 import base64
 from hashlib import sha1
-import random
 
 from petlib import ecdsa, ec, bn
 from sphinxmix import SphinxParams, SphinxClient, SphinxNode
@@ -125,7 +124,7 @@ def route_message(info, header, delta, params):
 
 
 def process_sphinxmix(enc_messages, params, secret):
-    random.shuffle(enc_messages)
+    utils.secure_shuffle(enc_messages)
     processed = []
     for message in enc_messages:
         decoded = decode_message(message)

@@ -3,6 +3,9 @@ import hashlib
 import locale
 import itertools
 import base64
+import random
+
+system_random = random.SystemRandom()
 
 ENCODING = locale.getpreferredencoding() or 'UTF-8'
 
@@ -47,3 +50,7 @@ def with_recipient(messages, default=None):
 def generate_random_key():
     s = os.urandom(32)
     return base64.urlsafe_b64encode(s).rstrip('=')
+
+
+def secure_shuffle(lst):
+    random.shuffle(lst, random=system_random.random)

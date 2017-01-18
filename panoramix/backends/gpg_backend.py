@@ -1,5 +1,4 @@
 import os
-import random
 import gnupg
 import re
 import shutil
@@ -87,7 +86,7 @@ def encrypt(data, peer_ids, gpg):
 
 
 def mix(encrypted_messages):
-    random.shuffle(encrypted_messages)
+    utils.secure_shuffle(encrypted_messages)
     return encrypted_messages
 
 
