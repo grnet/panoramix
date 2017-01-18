@@ -294,8 +294,8 @@ def mk_default_registry_path(public):
 
 def get_client(config):
     crypto_params = config.get("CRYPTO_PARAMS", core._default_crypto)
-    public = config["PUBLIC"]
-    secret = config["SECRET"]
+    public = config.get("PUBLIC")
+    secret = config.get("SECRET")
     registry_path = config.get("REGISTRY_PATH")
     if registry_path is None:
         registry_path = mk_default_registry_path(public)

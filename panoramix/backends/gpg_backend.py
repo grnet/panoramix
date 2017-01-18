@@ -123,7 +123,7 @@ class Server(object):
 
 
 def get_server(config):
-    GPG_HOMEDIR = config["GPG_HOMEDIR"]
+    GPG_HOMEDIR = config.get("GPG_HOMEDIR")
     GPG_PATH = config.get("GPG_PATH")
     return Server(GPG_HOMEDIR, GPG_PATH)
 
@@ -173,8 +173,8 @@ class Client(object):
 
 
 def get_client(config):
-    GPG_HOMEDIR = config["GPG_HOMEDIR"]
+    GPG_HOMEDIR = config.get("GPG_HOMEDIR")
     GPG_PATH = config.get("GPG_PATH")
-    GPG_KEYID = config["GPG_KEYID"]
+    GPG_KEYID = config.get("GPG_KEYID")
     GPG_PASSPHRASE = config.get("GPG_PASSPHRASE")
     return Client(GPG_HOMEDIR, GPG_PATH, GPG_KEYID, GPG_PASSPHRASE)

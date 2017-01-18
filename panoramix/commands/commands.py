@@ -10,7 +10,7 @@ from apimas.modeling.clients import ApimasClientAdapter
 
 from panoramix import canonical
 from panoramix import utils
-from panoramix.config import get_client_backend, cfg, CONFIG_FILE
+from panoramix.config import get_client_backend, cfg
 
 from cliff.command import Command
 from cliff.show import ShowOne
@@ -136,7 +136,8 @@ CONVERSIONS = {
 
 class config_list(ShowOne):
     def take_action(self, parsed_args):
-        return cfg.keys(), cfg.values()
+        _cfg = cfg.cfg()
+        return _cfg.keys(), _cfg.values()
 
 
 def hash_dict_wrap(message_hashes):
@@ -167,10 +168,8 @@ class config_set(Command):
         conversion = CONVERSIONS.get(typ)
         if conversion is None:
             print("Unrecognized type %s" % typ)
-        cfg[key] = conversion(value)
 
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(cfg, f)
+        cfg.set_value(key, conversion(value))
         print("Wrote '%s': %s in config." % (key, value))
 
 
@@ -184,9 +183,7 @@ class config_unset(Command):
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         key = utils.to_unicode(vargs["key"])
-        cfg.pop(key)
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(cfg, f)
+        cfg.remove(key)
         print("Deleted key '%s' from config." % key)
 
 

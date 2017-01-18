@@ -147,7 +147,7 @@ class Server(object):
 
 
 def get_server(config):
-    crypto_params = config["CRYPTO_PARAMS"]
+    crypto_params = config.get("CRYPTO_PARAMS")
     return Server(crypto_params)
 
 
@@ -198,7 +198,7 @@ class Client(object):
 
 
 def get_client(config):
-    crypto_params = config["CRYPTO_PARAMS"]
-    public = config["PUBLIC"]
-    secret = config["SECRET"]
+    crypto_params = config.get("CRYPTO_PARAMS")
+    public = config.get("PUBLIC")
+    secret = config.get("SECRET")
     return Client(crypto_params, public, secret)
