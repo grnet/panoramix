@@ -1,6 +1,8 @@
+import os
 import hashlib
 import locale
 import itertools
+import base64
 
 ENCODING = locale.getpreferredencoding() or 'UTF-8'
 
@@ -40,3 +42,8 @@ def unzip(lst):
 
 def with_recipient(messages, default=None):
     return zip(itertools.repeat(default), messages)
+
+
+def generate_random_key():
+    s = os.urandom(32)
+    return base64.urlsafe_b64encode(s).rstrip('=')

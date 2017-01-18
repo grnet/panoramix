@@ -1,5 +1,3 @@
-import os
-import base64
 import datetime
 import hashlib
 
@@ -26,11 +24,6 @@ def get_instance(model, filters, for_update=False):
         return objs.get(**filters)
     except ObjectDoesNotExist:
         raise Http404
-
-
-def generate_random_key():
-    s = os.urandom(32)
-    return base64.urlsafe_b64encode(s).rstrip('=')
 
 
 def contribute_to_negotiation(negotiation, request=None, key_data=None):
@@ -284,7 +277,8 @@ class NegotiationView(CreateView):
     resource_name = "negotiation"
 
     def new_negotiation(self):
-        return models.Negotiation.objects.create(id=generate_random_key())
+        return models.Negotiation.objects.create(
+            id=utils.generate_random_key())
 
     def creation_logic(self, request):
         request_data = request.data
