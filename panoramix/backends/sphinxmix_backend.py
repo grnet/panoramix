@@ -199,6 +199,7 @@ class Client(object):
 
 def get_client(config):
     crypto_params = config.get("CRYPTO_PARAMS")
-    public = config.get("PUBLIC")
-    secret = config.get("SECRET")
+    key_settings = config.get("KEY", {})
+    public = key_settings.get("PUBLIC")
+    secret = key_settings.get("SECRET")
     return Client(crypto_params, public, secret)

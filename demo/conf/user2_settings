@@ -1,5 +1,7 @@
 {"GPG_HOMEDIR": "/tmp/gpgs/2",
- "GPG_KEYID": "FC650CA0F7749FF0",
- "GPG_PASSPHRASE": "test2",
+ "KEY": {
+  "GPG_KEYID": "FC650CA0F7749FF0",
+  "GPG_PASSPHRASE": "test2"
+ },
  "CRYPTO_BACKEND": "panoramix.backends.gpg_backend"
 }

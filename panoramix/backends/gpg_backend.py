@@ -175,6 +175,7 @@ class Client(object):
 def get_client(config):
     GPG_HOMEDIR = config.get("GPG_HOMEDIR")
     GPG_PATH = config.get("GPG_PATH")
-    GPG_KEYID = config.get("GPG_KEYID")
-    GPG_PASSPHRASE = config.get("GPG_PASSPHRASE")
+    key_settings = config.get("KEY", {})
+    GPG_KEYID = key_settings.get("GPG_KEYID")
+    GPG_PASSPHRASE = key_settings.get("GPG_PASSPHRASE")
     return Client(GPG_HOMEDIR, GPG_PATH, GPG_KEYID, GPG_PASSPHRASE)
