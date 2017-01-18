@@ -1,4 +1,5 @@
 {"GPG_HOMEDIR": "/tmp/gpgs/1",
+ "CATALOG_URL": "http://127.0.0.1:8000/",
  "KEY": {
   "GPG_KEYID": "13C18335A029BEC5",
   "GPG_PASSPHRASE": "test3"

@@ -1,4 +1,5 @@
 {"CRYPTO_BACKEND": "panoramix.backends.sphinxmix_backend",
+ "CATALOG_URL": "http://127.0.0.1:8000/",
  "CRYPTO_PARAMS": {
   "GROUP": 713,
   "HEADER_LEN": 192,
