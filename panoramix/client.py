@@ -226,6 +226,7 @@ class PanoramixClient(object):
             "peer_id": key_id,
             "key_data": key_data,
             "key_type": key_type,
+            "crypto_backend": self.backend.BACKEND_NAME,
             "crypto_params": crypto_params,
             "owners": owners_d,
             "status": "READY",

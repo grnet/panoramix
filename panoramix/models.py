@@ -80,6 +80,7 @@ class Peer(models.Model):
     name = models.CharField(max_length=255)
     peer_id = models.CharField(max_length=255, primary_key=True)
     key_type = models.IntegerField(choices=KeyType.choices)
+    crypto_backend = models.CharField(max_length=255)
     crypto_params = models.TextField()
     key_data = models.TextField(unique=True)
     status = models.CharField(max_length=255, choices=PeerStatus.choices)

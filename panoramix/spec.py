@@ -235,6 +235,7 @@ PEERS = {
             "peer_id": astring(),  # .initwrite: {}
             "name": astring(),  # .initwrite: {}
             "key_type": aninteger(),  # .initwrite: {}
+            "crypto_backend": astring({".blankable": {}}),  # .initwrite: {}
             "crypto_params": astring({".blankable": {}}),  # .initwrite: {}
             "key_data": astring(),  # .initwrite: {}
             "owners": afield({
