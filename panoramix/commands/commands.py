@@ -377,17 +377,17 @@ class endpoint_list(Lister):
 
     def get_parser(self, prog_name):
         parser = Lister.get_parser(self, prog_name)
-        args = ["--peer-id"]
+        args = ["--peer-id", "--status"]
         add_arguments(parser, args)
         return parser
 
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         peer_id = vargs["peer_id"]
+        status = vargs["status"]
         client = mk_panoramix_client(cfg)
-        r = client.clients.endpoints.list(params={"peer_id": peer_id})
-        cs = safe_json_loads(r.text)
-        return from_list_of_dict(filter_data_only(cs))
+        es = client.endpoint_list(peer_id=peer_id, status=status)
+        return from_list_of_dict(es)
 
 
 class message_send(Command):

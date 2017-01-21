@@ -289,6 +289,11 @@ class PanoramixClient(object):
         return self.run_action(attrs, negotiation_id, accept,
                                self.clients.endpoints.create)
 
+    def endpoint_list(self, peer_id=None, status=None):
+        params = {"peer_id": peer_id, "status": status}
+        r = self.clients.endpoints.list(params=params)
+        return filter_data_only(safe_json_loads(r.text))
+
     def contribution_list(self, negotiation_id):
         params = {"negotiation": negotiation_id}
 
