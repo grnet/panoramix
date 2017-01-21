@@ -267,7 +267,7 @@ class Client(object):
         recipient_key = utils.unicode_to_int(self.registry.get_key(key_id))
         return encrypt(data, recipient_key, self.params)
 
-    def process(self, endpoint, messages):
+    def process(self, endpoint, messages, recipients=None):
         endpoint_type = endpoint["endpoint_type"]
         if endpoint_type == "ZEUS_BOOTH":
             return process_booth(messages)

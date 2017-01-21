@@ -190,7 +190,7 @@ class Client(object):
     def encrypt(self, data, recipients):
         return encrypt(data, recipients, self.params)
 
-    def process(self, endpoint, messages):
+    def process(self, endpoint, messages, recipients=None):
         endpoint_type = endpoint["endpoint_type"]
         if endpoint_type == "SPHINXMIX":
             return process_sphinxmix(messages, self.params, self.secret)

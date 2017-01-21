@@ -381,8 +381,9 @@ class PanoramixClient(object):
             return responses, process_log
 
         messages_text = [m["text"] for m in messages]
+        messages_recipient = [m["recipient"] for m in messages]
         processed_data, proof = self.crypto_client.process(
-            endpoint, messages_text)
+            endpoint, messages_text, recipients=messages_recipient)
         requests = []
         msg_hashes = []
         for recipient, text in processed_data:
