@@ -287,6 +287,19 @@ class Client(object):
         raise ValueError("Unsupported endpoint type")
 
 
+ENDPOINT_TYPES = [
+    "ZEUS_BOOTH",
+    "ZEUS_SK_MIX",
+    "ZEUS_SK_PARTIAL_DECRYPT",
+    "ZEUS_SK_DECRYPT",
+    "ZEUS_SK_COMBINE",
+]
+
+REQUIRED_PARAMS = {
+    "ZEUS_SK_MIX": ["election_public"],
+}
+
+
 def mk_default_registry_path(public):
     key_id = get_key_id_from_key_data(utils.int_to_unicode(public))
     return os.path.expanduser("~/.panoramixregistry." + key_id)
