@@ -294,6 +294,12 @@ class PanoramixClient(object):
         r = self.clients.endpoints.list(params=params)
         return filter_data_only(safe_json_loads(r.text))
 
+    def get_open_endpoint_of_peer(self, peer_id):
+        endpoints = self.endpoint_list(peer_id=peer_id, status="OPEN")
+        if not endpoints:
+            return None
+        return endpoints[0]
+
     def contribution_list(self, negotiation_id):
         params = {"negotiation": negotiation_id}
 
@@ -411,6 +417,27 @@ class PanoramixClient(object):
             "process_proof": canonical.to_canonical(proof),
         }
         return responses, process_log
+
+    def messages_forward(self, endpoint_id):
+        r = self.clients.messages.list(params={
+            "endpoint_id": endpoint_id, "box": OUTBOX})
+        messages = filter_data_only(safe_json_loads(r.text))
+        responses = []
+        for message in messages:
+            responses.append(self.message_forward(message))
+        return responses
+
+    def message_forward(self, message):
+        recipient = message["recipient"]
+        to_endpoint = self.get_open_endpoint_of_peer(recipient)
+        request, msg_hash = self.prepare_send_message(
+            to_endpoint["endpoint_id"],
+            INBOX,
+            message["text"],
+            message["sender"],
+            recipient)
+        r = self.clients.messages.create(data=request)
+        return safe_json_loads(r.text)
 
     def outbox_forward(self, from_endpoint_id, to_endpoint_id):
         r = self.clients.messages.list(params={
