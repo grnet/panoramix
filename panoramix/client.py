@@ -190,6 +190,24 @@ class PanoramixClient(object):
             raise ValueError("contrib not expected here")
         return d["data"]["peer_id"]
 
+    def get_callpoint(self, resource, operation):
+        clients = self.clients
+        CLIENT = {"peer": clients.peers,
+                  "endpoint": clients.endpoints}
+        return getattr(CLIENT[resource], operation)
+
+    def apply_consensus(self, body, consensus_id):
+        info = body["info"]
+        callpoint = self.get_callpoint(info["resource"], info["operation"])
+        body["by_consensus"] = mk_by_consensus(consensus_id)
+        resource_id = info.get("id")
+        request = self.mk_signed_request(body)
+        kwargs = {"data": request}
+        if resource_id is not None:
+            kwargs["resource_id"] = resource_id
+        r = callpoint(**kwargs)
+        return safe_json_loads(r.text)
+
     def peer_info(self, peer_id):
         try:
             r = self.clients.peers.retrieve(peer_id)
