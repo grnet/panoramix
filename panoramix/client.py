@@ -67,6 +67,12 @@ def hash_dict_wrap(message_hashes):
     return [{"hash": mh} for mh in sorted(message_hashes)]
 
 
+def include_next_negotiation_id(info, next_negotiation_id):
+    if next_negotiation_id is not None:
+        info["next_negotiation_id"] = next_negotiation_id
+    return info
+
+
 INBOX = "INBOX"
 OUTBOX = "OUTBOX"
 PROCESSBOX = "PROCESSBOX"
@@ -104,6 +110,14 @@ class PanoramixClient(object):
     def register_crypto_client(self, cfg):
         assert self.backend is not None
         self.crypto_client = self.backend.get_client(cfg)
+
+    def mk_endpoint_hyperlink(self, endpoint_id):
+        endpoint = self.clients.endpoints.endpoint.rstrip('/')
+        return endpoint + '/' + endpoint_id + '/'
+
+    def mk_peer_hyperlink(self, peer_id):
+        endpoint = self.clients.peers.endpoint.rstrip('/')
+        return endpoint + '/' + peer_id + '/'
 
     def mk_negotiation_hyperlink(self, negotiation_id):
         endpoint = self.clients.negotiations.endpoint.rstrip('/')
@@ -188,7 +202,7 @@ class PanoramixClient(object):
         is_contrib, d = action(**action_kwargs)
         if is_contrib:
             raise ValueError("contrib not expected here")
-        return d["data"]["peer_id"]
+        return d["data"]
 
     def get_callpoint(self, resource, operation):
         clients = self.clients
@@ -223,7 +237,8 @@ class PanoramixClient(object):
             return None
 
     def peer_create(self, name, set_key=True, owners=None, consensus_id=None,
-                    negotiation_id=None, accept=False):
+                    negotiation_id=None, accept=False,
+                    next_negotiation_id=None):
         if owners is None:
             owners = []
         owners_d = [{"owner_key_id": owner} for owner in owners]
@@ -239,6 +254,7 @@ class PanoramixClient(object):
         crypto_params = self.crypto_client.get_crypto_params()
         key_type = self.crypto_client.get_key_type()
         info = mk_info("peer", "create")
+        info = include_next_negotiation_id(info, next_negotiation_id)
         data = {
             "name": name,
             "peer_id": key_id,
@@ -269,9 +285,12 @@ class PanoramixClient(object):
     def endpoint_create(
             self, endpoint_id, peer_id, endpoint_type, endpoint_params,
             size_min, size_max, description, consensus_id=None,
-            negotiation_id=None, accept=False):
+            negotiation_id=None, accept=False,
+            next_negotiation_id=None):
+        info = mk_info("endpoint", "create")
+        info = include_next_negotiation_id(info, next_negotiation_id)
         attrs = {
-            "info": mk_info("endpoint", "create"),
+            "info": info,
             "data": {
                 "endpoint_id": endpoint_id,
                 "peer_id": peer_id,
@@ -304,7 +323,7 @@ class PanoramixClient(object):
         params = {"negotiation": negotiation_id}
 
         r = self.clients.contributions.list(params=params)
-        contribs = filter_data_only(safe_json_loads(r.text))
+        contribs = safe_json_loads(r.text)
         return contribs
 
     def contribution_accept(self, negotiation_id, contribution_id):
@@ -354,13 +373,73 @@ class PanoramixClient(object):
         ms = safe_json_loads(r.text)
         return filter_data_only(ms)
 
+    def get_latest_consensus(self, endpoint, on_status=None):
+        consensus_logs = endpoint["consensus_logs"]
+        latest = max(consensus_logs, key=lambda log: log["timestamp"])
+        if on_status is not None and latest["status"] != on_status:
+            return None
+        return latest
+
+    def check_endpoint_on_minimum(self, endpoint):
+        size_min = endpoint["size_min"]
+        size_max = endpoint["size_max"]
+        inbox_messages = self.box_list(endpoint["endpoint_id"], INBOX)
+        inbox_size = len(inbox_messages)
+        if inbox_size < size_min:
+            return []
+        selected = inbox_messages[:size_max]
+        message_hashes = [msg["message_hash"] for msg in selected]
+        return hash_dict_wrap(message_hashes)
+
+    def close_on_minimum_prepare(self, endpoint_id):
+        endpoint = self.endpoint_info(endpoint_id)
+        latest_consensus = self.get_latest_consensus(endpoint, "OPEN")
+        if endpoint["status"] != "OPEN" or latest_consensus is None:
+            return "wrongstatus"
+        message_hashes = self.check_endpoint_on_minimum(endpoint)
+        if not message_hashes:
+            return "nomin"
+        properties = {"message_hashes": message_hashes}
+        return {"endpoint_id": endpoint_id, "status": "CLOSED",
+                "properties": properties,
+                "on_last_consensus_id": latest_consensus["consensus_id"]}
+
+    def close_on_minimum(self, endpoint_id, negotiation_id,
+                         next_negotiation_id=None):
+        params = self.close_on_minimum_prepare(endpoint_id)
+        if params in ["wrongstatus", "nomin"]:
+            return params
+        params["negotiation_id"] = negotiation_id
+        params = include_next_negotiation_id(params, next_negotiation_id)
+        return self.endpoint_action(**params)
+
+    def record_process_prepare(self, endpoint_id, properties):
+        endpoint = self.endpoint_info(endpoint_id)
+        latest_consensus = self.get_latest_consensus(endpoint, "CLOSED")
+        if endpoint["status"] != "CLOSED" or latest_consensus is None:
+            return "wrongstatus"
+        return {"endpoint_id": endpoint_id, "status": "PROCESSED",
+                "properties": properties,
+                "on_last_consensus_id": latest_consensus["consensus_id"]}
+
+    def record_process(self, endpoint_id, negotiation_id, properties,
+                       next_negotiation_id=None):
+        params = self.record_process_prepare(endpoint_id, properties)
+        if params == "wrongstatus":
+            return params
+        params["negotiation_id"] = negotiation_id
+        params = include_next_negotiation_id(params, next_negotiation_id)
+        return self.endpoint_action(**params)
+
     def endpoint_action(
             self, endpoint_id, status, properties, on_last_consensus_id=None,
-            consensus_id=None, negotiation_id=None, accept=False):
+            consensus_id=None, negotiation_id=None, accept=False,
+            next_negotiation_id=None):
 
         info = mk_info("endpoint", "partial_update", endpoint_id)
         if on_last_consensus_id is not None:
             info["on_last_consensus_id"] = on_last_consensus_id
+        info = include_next_negotiation_id(info, next_negotiation_id)
 
         data = {"status": status}
         data.update(properties)
@@ -373,10 +452,12 @@ class PanoramixClient(object):
         if consensus_id is not None:
             attrs["by_consensus"] = mk_by_consensus(consensus_id)
 
-        return self.run_action(
+        r = self.run_action(
             attrs, negotiation_id, accept,
             self.clients.endpoints.partial_update,
             resource_id=endpoint_id)
+        self.clients = mk_clients(self.catalog_url)
+        return r
 
     def inbox_process(self, endpoint_id, peer_id, upload):
         endpoint_resp = self.clients.endpoints.retrieve(endpoint_id)
@@ -427,8 +508,20 @@ class PanoramixClient(object):
             responses.append(self.message_forward(message))
         return responses
 
+    def write_to_file(self, message, filename):
+        text = canonical.from_canonical(
+            canonical.from_unicode(message["text"]))
+        with open(filename, "a") as f:
+            f.write("%s\n\0" % text)
+        return (message["id"], "file", filename)
+
     def message_forward(self, message):
         recipient = message["recipient"]
+        separator = "://"
+        resource_type, sep, value = recipient.partition(separator)
+        if sep == separator and resource_type == "file":
+            return self.write_to_file(message, value)
+
         to_endpoint = self.get_open_endpoint_of_peer(recipient)
         request, msg_hash = self.prepare_send_message(
             to_endpoint["endpoint_id"],
@@ -437,7 +530,8 @@ class PanoramixClient(object):
             message["sender"],
             recipient)
         r = self.clients.messages.create(data=request)
-        return safe_json_loads(r.text)
+        assert r.text
+        return (message["id"], "peer", recipient)
 
     def outbox_forward(self, from_endpoint_id, to_endpoint_id):
         r = self.clients.messages.list(params={

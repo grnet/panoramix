@@ -45,6 +45,9 @@ setup(
         'console_scripts': [
             'panoramix = panoramix.cli:main',
             'panoramix-manage = panoramix_django.manage:main',
+            'panoramix-wizard = panoramix.wizard:main',
+            'panoramix-server-wizard = panoramix.server_wizard:main',
+            'sphinxmix-client = panoramix.sphinxmix_client:main',
         ],
     },
 )

@@ -111,7 +111,7 @@ class config_unset(Command):
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
         key = utils.to_unicode(vargs["key"])
-        cfg.remove(key)
+        cfg.pop(key)
         print("Deleted key '%s' from config." % key)
 
 
@@ -245,7 +245,7 @@ class contribution_list(Lister):
         vargs = vars(parsed_args)
         negotiation_id = vargs["negotiation_id"]
         client = mk_panoramix_client(cfg)
-        contribs = client.contribution_list(negotiation_id)
+        contribs = filter_data_only(client.contribution_list(negotiation_id))
         listing = []
 
         for contrib in contribs:
