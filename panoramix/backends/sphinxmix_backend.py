@@ -10,6 +10,14 @@ from panoramix import canonical, utils
 BACKEND_NAME = "SPHINXMIX"
 
 
+ENDPOINT_TYPES = [
+    "SPHINXMIX_GATEWAY",
+    "SPHINXMIX",
+]
+
+REQUIRED_PARAMS = {}
+
+
 def make_sphinxmix_params(crypto_params):
     GROUP = crypto_params["GROUP"]
     HEADER_LEN = crypto_params["HEADER_LEN"]
@@ -135,6 +143,10 @@ def process_sphinxmix(enc_messages, params, secret):
     return processed, None
 
 
+def process_gateway(messages, recipients):
+    return zip(recipients, messages), None
+
+
 class Server(object):
     def __init__(self, crypto_params):
         self.params = make_sphinxmix_params(crypto_params)
@@ -156,7 +168,7 @@ class Client(object):
         self._crypto_params = crypto_params
         self.params = make_sphinxmix_params(crypto_params)
         self.public = public
-        self.secret = bn.Bn.from_hex(secret)
+        self.secret = bn_decode(secret)
         self.key_id = public
 
     def get_key_data(self):
@@ -185,7 +197,13 @@ class Client(object):
         return sign(body, self.params, self.secret, self.public)
 
     def combine_keys(self, keys):
-        raise NotImplementedError()
+        # WARNING: not checked for cryptographic correctness;
+        # used only to produce a common identifier
+        publics = [mk_EcPt(key, self.params) for key in keys]
+        result = ec.EcPt(self.params.group.G)
+        for public in publics:
+            result = result + public
+        return str(result)
 
     def encrypt(self, data, recipients):
         return encrypt(data, recipients, self.params)
@@ -194,6 +212,8 @@ class Client(object):
         endpoint_type = endpoint["endpoint_type"]
         if endpoint_type == "SPHINXMIX":
             return process_sphinxmix(messages, self.params, self.secret)
+        if endpoint_type == "SPHINXMIX_GATEWAY":
+            return process_gateway(messages, recipients)
         raise ValueError("Unsupported endpoint type")
 
 
@@ -203,3 +223,26 @@ def get_client(config):
     public = key_settings.get("PUBLIC")
     secret = key_settings.get("SECRET")
     return Client(crypto_params, public, secret)
+
+
+def get_default_crypto_params():
+    return {"GROUP": 713,
+            "HEADER_LEN": 192,
+            "BODY_LEN": 1024}
+
+
+def create_key(params):
+    secret = params.group.gensecret()
+    public = params.group.expon(params.group.g, secret)
+    return secret, public
+
+
+KEY_SETTING_NAMES = ["SECRET", "PUBLIC"]
+
+
+def create_key_settings(crypto_params):
+    params = make_sphinxmix_params(crypto_params)
+    secret, public = create_key(params)
+    secret = bn_encode(secret)
+    public = str(public)
+    return {"SECRET": secret, "PUBLIC": public}

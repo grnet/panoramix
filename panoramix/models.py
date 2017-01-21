@@ -127,6 +127,7 @@ class EndpointType(DjangoChoices):
     ZEUS_SK_DECRYPT = ChoiceItem("ZEUS_SK_DECRYPT")
     ZEUS_SK_COMBINE = ChoiceItem("ZEUS_SK_COMBINE")
     SPHINXMIX = ChoiceItem("SPHINXMIX")
+    SPHINXMIX_GATEWAY = ChoiceItem("SPHINXMIX_GATEWAY")
     USER = ChoiceItem("USER")
 
 
