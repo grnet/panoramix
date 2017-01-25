@@ -1,5 +1,4 @@
 import sys
-import hashlib
 import json
 from collections import namedtuple
 import importlib
@@ -9,6 +8,7 @@ from apimas.modeling.core.exceptions import ApimasClientException
 
 from panoramix.spec import SPEC
 from panoramix import canonical
+from panoramix import utils
 
 
 def safe_json_loads(s):
@@ -53,14 +53,6 @@ def mk_by_consensus(consensus_id):
 
 def filter_data_only(lst):
     return [d["data"] for d in lst]
-
-
-def hash_message(text, sender, recipient):
-    hasher = hashlib.sha256()
-    hasher.update(text)
-    hasher.update(sender)
-    hasher.update(recipient)
-    return hasher.hexdigest()
 
 
 def hash_dict_wrap(message_hashes):
@@ -338,16 +330,18 @@ class PanoramixClient(object):
         return d
 
     def prepare_send_message(
-            self, endpoint_id, box, text, sender, recipient, send_hash=False):
+            self, endpoint_id, box, text, sender, recipient, send_hash=False,
+            serial=None):
         data = {
             "box": box,
             "endpoint_id": endpoint_id,
             "text": text,
             "sender": sender,
             "recipient": recipient,
+            "serial": serial,
         }
 
-        msg_hash = hash_message(text, sender, recipient)
+        msg_hash = utils.hash_message(text, sender, recipient, serial)
         if send_hash:
             data["message_hash"] = msg_hash
 
@@ -478,12 +472,14 @@ class PanoramixClient(object):
             endpoint, messages_text, recipients=messages_recipient)
         requests = []
         msg_hashes = []
+        serial = 0
         for recipient, text in processed_data:
+            serial += 1
             if recipient is None:
                 recipient = "dummy_next_recipient"
             request, msg_hash = self.prepare_send_message(
                 endpoint_id, PROCESSBOX, text,
-                peer_id, recipient, send_hash=False)
+                peer_id, recipient, send_hash=False, serial=serial)
             requests.append(request)
             msg_hashes.append(msg_hash)
 

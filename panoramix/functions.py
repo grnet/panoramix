@@ -446,13 +446,20 @@ class MessageView(CreateView):
         box = data.get("box")
         endpoint = get_instance(
             models.Endpoint, {'endpoint_id': endpoint_id}, for_update=True)
+        serial = data.get("serial")
 
         if box == models.Box.INBOX:
             check_cycle_is_open(endpoint)
+            if serial is not None:
+                raise ValidationError(
+                    "Serial should be left null at the inbox.")
 
         elif box == models.Box.PROCESSBOX:
             check_cycle_can_process(endpoint)
             check_is_owner(endpoint, request_user)
+            if not isinstance(serial, (int, long)):
+                raise ValidationError(
+                    "Serial must be an integer at the processbox.")
         else:
             raise PermissionDenied("can't post to box %s" % box)
 
@@ -465,23 +472,16 @@ class MessageView(CreateView):
         text = data.get("text")
         sender = data.get("sender")
         recipient = data.get("recipient")
+        serial = data.get("serial")
 
-        computed_hash = hash_message(text, sender, recipient)
+        computed_hash = utils.hash_message(text, sender, recipient, serial)
         requested_hash = data.get("message_hash")
         if requested_hash is not None and requested_hash != computed_hash:
             raise ValidationError("hash mismatch")
         return models.Message.objects.create(
-                sender=sender, recipient=recipient,
-                text=text, message_hash=computed_hash,
-                endpoint_id=endpoint_id, box=box)
-
-
-def hash_message(text, sender, recipient):
-    hasher = hashlib.sha256()
-    hasher.update(text)
-    hasher.update(sender)
-    hasher.update(recipient)
-    return hasher.hexdigest()
+            sender=sender, recipient=recipient,
+            text=text, message_hash=computed_hash,
+            endpoint_id=endpoint_id, box=box, serial=serial)
 
 
 def check_cycle_is_open(endpoint):

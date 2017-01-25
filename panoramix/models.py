@@ -191,6 +191,7 @@ class Box(DjangoChoices):
 
 
 class Message(models.Model):
+    serial = models.IntegerField(null=True)
     sender = models.CharField(max_length=255)  # some peer
     recipient = models.CharField(max_length=255)  # some peer
     text = models.TextField()

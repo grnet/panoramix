@@ -14,6 +14,21 @@ def hash_string(s):
     return hashlib.sha256(s).hexdigest()
 
 
+def show_serial(serial):
+    s = "" if serial is None else str(serial)
+    s += "|"
+    return s
+
+
+def hash_message(text, sender, recipient, serial):
+    hasher = hashlib.sha256()
+    hasher.update(show_serial(serial))
+    hasher.update(text)
+    hasher.update(sender)
+    hasher.update(recipient)
+    return hasher.hexdigest()
+
+
 def from_unicode(s):
     if type(s) is unicode:
         return s.encode(ENCODING)

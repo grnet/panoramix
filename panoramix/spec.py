@@ -308,6 +308,7 @@ MESSAGES = {
         "data": namespaced({
             "id": afield({".serial": {},
                           ".readonly": {}}),
+            "serial": aninteger({".nullable": {}}),
             "endpoint_id": astring({".required": {}}),
             "sender": astring({".required": {}}),
             "recipient": astring({".required": {}}),
