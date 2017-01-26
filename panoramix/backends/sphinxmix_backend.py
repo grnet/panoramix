@@ -4,7 +4,10 @@ from hashlib import sha1
 import random
 
 from petlib import ecdsa, ec, bn
-from sphinxmix import SphinxParams, SphinxClient, SphinxNode
+try:
+    from sphinxmix import SphinxParams, SphinxClient, SphinxNode
+except ImportError:
+    raise ImportError("sphinxmix backend needs sphinxmix library")
 
 from panoramix import canonical, utils
 
