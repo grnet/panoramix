@@ -20,6 +20,9 @@ with open('requirements.txt') as f:
     ]
 
 EXTRAS_REQUIRES = {
+    'zeus': ['pycrypto', 'gmpy'],
+    'sphinx': ['sphinxmix'],
+    'gnupg': ['gnupg'],
 }
 
 TESTS_REQUIRES = [

@@ -3,36 +3,39 @@
 
 # Copied from https://github.com/grnet/zeus/blob/master/zeus/core.py
 
+import inspect
 import sys
-PYTHON_MAJOR = sys.version_info[0]
-from datetime import datetime
-from random import randint, shuffle, choice
+
+from bisect import bisect_right
 from collections import deque
+from cStringIO import StringIO
+from datetime import datetime
+from errno import ESRCH
+from fcntl import flock, LOCK_EX, LOCK_UN
 from hashlib import sha256, sha1
 from itertools import izip, cycle, chain, repeat
-from functools import partial
+from json import load as json_load
+from marshal import loads as marshal_loads, dumps as marshal_dumps
 from math import log
-from bisect import bisect_right
-import Crypto.Util.number as number
-inverse = number.inverse
-from Crypto import Random
-from operator import mul as mul_operator
+from multiprocessing import Semaphore
 from os import (fork, kill, getpid, waitpid, ftruncate, lseek, fstat,
                 read, write, unlink, open as os_open, close,
                 O_CREAT, O_RDWR, O_APPEND, SEEK_CUR, SEEK_SET)
-from fcntl import flock, LOCK_EX, LOCK_UN
-from multiprocessing import Semaphore, Queue as mpQueue
+from random import randint, choice
 from Queue import Empty, Full
 from select import select
 from signal import SIGKILL
-from errno import ESRCH
-from cStringIO import StringIO
-from marshal import loads as marshal_loads, dumps as marshal_dumps
-from json import load as json_load
-from binascii import hexlify
-import inspect
-import re
 from time import time, sleep
+
+try:
+    import Crypto.Util.number as number
+    from Crypto import Random
+except ImportError:
+    raise ImportError("zeus backend needs PyCrypto library")
+
+inverse = number.inverse
+
+PYTHON_MAJOR = sys.version_info[0]
 
 try:
     from gmpy import mpz
@@ -42,6 +45,7 @@ try:
         return int(_pow(mpz(b), e, m))
 except ImportError:
     print "Warning: Could not import gmpy. Falling back to SLOW crypto."
+
 
 bit_length = lambda num: num.bit_length()
 if sys.version_info < (2, 7):
@@ -53,6 +57,7 @@ if sys.version_info < (2, 7):
 
 class ZeusError(Exception):
     pass
+
 
 ALPHA = 0
 BETA  = 1
@@ -293,7 +298,7 @@ def from_canonical(inp, unicode_strings=0, s=''):
             s = read(2)
             if s != ': ':
                 m = ("byte %d: invalid token '%s' instead of ': '"
-                    % (inp.tell(), s))
+                     % (inp.tell(), s))
                 raise ValueError(m)
 
             value = from_canonical(inp, unicode_strings=unicode_strings)
@@ -535,14 +540,16 @@ class CheapQueue(object):
         self.getcount += 1
         return obj
 
-#Queue = mpQueue
+
 Queue = CheapQueue
+
 
 def async_call(func, args, kw, channel):
     argspec = inspect.getargspec(func)
     if argspec.keywords or 'async_channel' in argspec.args:
         kw['async_channel'] = channel
     return func(*args, **kw)
+
 
 def async_worker(link):
     while 1:
@@ -585,6 +592,7 @@ class AsyncWorkerLink(object):
 
     def disconnect(self, wait=1):
         self.pool.master_queue.put((self.index, None), block=wait)
+
 
 class AsyncWorkerPool(object):
     def __init__(self, nr_parallel, worker_func):

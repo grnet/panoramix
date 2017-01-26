@@ -13,7 +13,9 @@ This packages includes three cryptographic backends: 'gpg', 'zeus', and
 'sphinxmix'. In order to use them, you must install the respective
 dependencies with:
 
-  pip install -r requirements_<backend>.txt
+  pip install panoramix[zeus]
+  pip install panoramix[sphinxmix]
+  pip install panoramix[gpg]
 
 
 Demo
