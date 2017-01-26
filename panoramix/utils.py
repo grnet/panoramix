@@ -23,7 +23,7 @@ def show_serial(serial):
 def hash_message(text, sender, recipient, serial):
     hasher = hashlib.sha256()
     hasher.update(show_serial(serial))
-    hasher.update(text)
+    hasher.update(from_unicode(text))
     hasher.update(sender)
     hasher.update(recipient)
     return hasher.hexdigest()
