@@ -1,12 +1,29 @@
-{"CRYPTO_BACKEND": "panoramix.backends.sphinxmix_backend",
- "CATALOG_URL": "http://127.0.0.1:8000/",
- "CRYPTO_PARAMS": {
-  "GROUP": 713,
-  "HEADER_LEN": 192,
-  "BODY_LEN": 1024
- },
- "KEY": {
-  "SECRET": "5cbe4e3da463a3812b9e97ff7b72f652bd26d6e935254891594b2497",
-  "PUBLIC": "030e523aae1865457a73174ecc94d91df47440202984f0fd471e98f1a6"
- }
+{
+  "CATALOG_URL": {
+    "description": null, 
+    "value": "http://127.0.0.1:8000/", 
+    "title": "CATALOG_URL"
+  }, 
+  "CRYPTO_BACKEND": {
+    "description": null, 
+    "value": "panoramix.backends.sphinxmix_backend", 
+    "title": "CRYPTO_BACKEND"
+  }, 
+  "CRYPTO_PARAMS": {
+    "description": null, 
+    "value": {
+      "BODY_LEN": 1024, 
+      "GROUP": 713, 
+      "HEADER_LEN": 192
+    }, 
+    "title": "CRYPTO_PARAMS"
+  }, 
+  "KEY": {
+    "description": null, 
+    "value": {
+      "SECRET": "5cbe4e3da463a3812b9e97ff7b72f652bd26d6e935254891594b2497", 
+      "PUBLIC": "030e523aae1865457a73174ecc94d91df47440202984f0fd471e98f1a6"
+    }, 
+    "title": "KEY"
+  }
 }

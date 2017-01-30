@@ -1,8 +1,25 @@
-{"GPG_HOMEDIR": "/tmp/gpgs/2",
- "CATALOG_URL": "http://127.0.0.1:8000/",
- "KEY": {
-  "GPG_KEYID": "FC650CA0F7749FF0",
-  "GPG_PASSPHRASE": "test2"
- },
- "CRYPTO_BACKEND": "panoramix.backends.gpg_backend"
+{
+  "CATALOG_URL": {
+    "description": null, 
+    "value": "http://127.0.0.1:8000/", 
+    "title": "CATALOG_URL"
+  }, 
+  "GPG_HOMEDIR": {
+    "description": null, 
+    "value": "/tmp/gpgs/2", 
+    "title": "GPG_HOMEDIR"
+  }, 
+  "CRYPTO_BACKEND": {
+    "description": null, 
+    "value": "panoramix.backends.gpg_backend", 
+    "title": "CRYPTO_BACKEND"
+  }, 
+  "KEY": {
+    "description": null, 
+    "value": {
+      "GPG_PASSPHRASE": "test2", 
+      "GPG_KEYID": "FC650CA0F7749FF0"
+    }, 
+    "title": "KEY"
+  }
 }
