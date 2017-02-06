@@ -59,10 +59,10 @@ def hash_dict_wrap(message_hashes):
     return [{"hash": mh} for mh in sorted(message_hashes)]
 
 
-def include_next_negotiation_id(info, next_negotiation_id):
+def include_next_negotiation_id(meta, next_negotiation_id):
     if next_negotiation_id is not None:
-        info["next_negotiation_id"] = next_negotiation_id
-    return info
+        meta["next_negotiation_id"] = next_negotiation_id
+    return meta
 
 
 INBOX = "INBOX"
@@ -150,9 +150,10 @@ class PanoramixClient(object):
         return r
 
     def run_action(self, attrs, negotiation_id, accept, callpoint,
-                   resource_id=None):
+                   resource_id=None, extra_meta=None):
         if negotiation_id:
-            r = self.run_contribution(negotiation_id, attrs, accept)
+            r = self.run_contribution(
+                negotiation_id, attrs, accept, extra_meta)
         else:
             request = self.mk_signed_request(attrs)
             kwargs = {"data": request}
@@ -228,6 +229,11 @@ class PanoramixClient(object):
         except ApimasClientException:
             return None
 
+    def next_negotiation_meta(self, next_negotiation_id):
+        if next_negotiation_id is None:
+            return None
+        return {"next_negotiation_id": next_negotiation_id}
+
     def peer_create(self, name, set_key=True, owners=None, consensus_id=None,
                     negotiation_id=None, accept=False,
                     next_negotiation_id=None):
@@ -246,7 +252,6 @@ class PanoramixClient(object):
         crypto_params = self.crypto_client.get_crypto_params()
         key_type = self.crypto_client.get_key_type()
         info = mk_info("peer", "create")
-        info = include_next_negotiation_id(info, next_negotiation_id)
         data = {
             "name": name,
             "peer_id": key_id,
@@ -264,8 +269,10 @@ class PanoramixClient(object):
         if consensus_id is not None:
             attrs["by_consensus"] = mk_by_consensus(consensus_id)
 
+        extra_meta = self.next_negotiation_meta(next_negotiation_id)
         return self.run_action(attrs, negotiation_id, accept,
-                               self.clients.peers.create)
+                               self.clients.peers.create,
+                               extra_meta=extra_meta)
 
     def peer_import(self, peer_id):
         r = self.clients.peers.retrieve(peer_id)
@@ -280,7 +287,6 @@ class PanoramixClient(object):
             negotiation_id=None, accept=False,
             next_negotiation_id=None):
         info = mk_info("endpoint", "create")
-        info = include_next_negotiation_id(info, next_negotiation_id)
         attrs = {
             "info": info,
             "data": {
@@ -297,8 +303,10 @@ class PanoramixClient(object):
         if consensus_id is not None:
             attrs["by_consensus"] = mk_by_consensus(consensus_id)
 
+        extra_meta = self.next_negotiation_meta(next_negotiation_id)
         return self.run_action(attrs, negotiation_id, accept,
-                               self.clients.endpoints.create)
+                               self.clients.endpoints.create,
+                               extra_meta=extra_meta)
 
     def endpoint_list(self, peer_id=None, status=None):
         params = {"peer_id": peer_id, "status": status}
@@ -433,7 +441,6 @@ class PanoramixClient(object):
         info = mk_info("endpoint", "partial_update", endpoint_id)
         if on_last_consensus_id is not None:
             info["on_last_consensus_id"] = on_last_consensus_id
-        info = include_next_negotiation_id(info, next_negotiation_id)
 
         data = {"status": status}
         data.update(properties)
@@ -446,10 +453,11 @@ class PanoramixClient(object):
         if consensus_id is not None:
             attrs["by_consensus"] = mk_by_consensus(consensus_id)
 
+        extra_meta = self.next_negotiation_meta(next_negotiation_id)
         r = self.run_action(
             attrs, negotiation_id, accept,
             self.clients.endpoints.partial_update,
-            resource_id=endpoint_id)
+            resource_id=endpoint_id, extra_meta=extra_meta)
         self.clients = mk_clients(self.catalog_url)
         return r
 

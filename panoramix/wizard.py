@@ -77,8 +77,10 @@ def _check_ep_negotiation(negotiation_id, initial_contrib):
     ui.inform("All peer owners have agreed. Sending accept contribution.")
     text = get_contribution_text(initial_contrib)
     body = text["body"]
+    meta = text["meta"]
+    meta = hash_meta_next_negotiation(meta)
     r = client.run_contribution(
-        negotiation_id, body, accept=True)
+        negotiation_id, body, accept=True, extra_meta=meta)
     d = safe_json_loads(r.text)
     contribution = d["data"]
     ui.inform("Sent contribution %s" % contribution["id"])
@@ -142,6 +144,7 @@ def check_negotiation_wizard():
     contributions = [c for c in contributions if c["latest"]]
     signers = [me]
     orig_body = None
+    orig_next_negotiation_id = read_next_negotiation_id()
     for contribution in contributions:
         signer = contribution["signer_key_id"]
         text = get_contribution_text(contribution)
@@ -159,15 +162,19 @@ def check_negotiation_wizard():
             # print "Imported peer %s" % signer
         elif signer != me:
             raise ValueError("uninvited contribution!")
+        next_negotiation_id = meta.get("next_negotiation_id")
+        if next_negotiation_id != orig_next_negotiation_id:
+            raise ValueError("wrong next_negotiation_id")
     if invitations:
         raise Block("Invitations pending: %s" % invitations)
     ui.inform("All invited peers have joined. Sending accept contribution.")
     name = orig_body["data"]["name"]
     next_negotiation_id = orig_body["info"].get("next_negotiation_id")
+    hashed_next_negotiation_id = utils.hash_string(orig_next_negotiation_id)
     is_contrib, d = client.peer_create(
         name, set_key=True, owners=signers,
         negotiation_id=negotiation_id, accept=True,
-        next_negotiation_id=next_negotiation_id)
+        next_negotiation_id=hashed_next_negotiation_id)
     assert is_contrib
     contrib_id = d["data"]["id"]
     ui.inform("Your new contribution id is: %s" % contrib_id)
@@ -371,7 +378,9 @@ def join_ep_close_contribution():
     computed_hashes = client.check_endpoint_on_minimum(endpoint)
     if suggested_hashes != computed_hashes:
         abort("Couldn't agree on message hashes.")
-    r = client.run_contribution(negotiation_id, body, accept=True)
+    meta = hash_meta_next_negotiation(text["meta"])
+    r = client.run_contribution(
+        negotiation_id, body, accept=True, extra_meta=meta)
     d = safe_json_loads(r.text)
     contribution = d["data"]
     ui.inform("Sent contribution %s" % contribution["id"])
@@ -390,7 +399,9 @@ def join_ep_process_contribution():
     computed_hashes = log["message_hashes"]
     if suggested_hashes != computed_hashes:
         abort("Couldn't agree on message hashes.")
-    r = client.run_contribution(negotiation_id, body, accept=True)
+    meta = hash_meta_next_negotiation(text["meta"])
+    r = client.run_contribution(
+        negotiation_id, body, accept=True, extra_meta=meta)
     d = safe_json_loads(r.text)
     contribution = d["data"]
     ui.inform("Sent contribution %s" % contribution["id"])
@@ -492,12 +503,28 @@ def join_ep_coord_second_contribution():
         negotiation_id, initial_contrib, for_ep=True)
 
 
+def hash_meta_next_negotiation(meta):
+    next_negotiation_id = meta["next_negotiation_id"]
+    meta["next_negotiation_id"] = utils.hash_string(next_negotiation_id)
+    return meta
+
+
+def check_hashed_next_negotiation_id(meta):
+    next_negotiation_id = read_next_negotiation_id()
+    hashed_next_negotiation_id = meta.get("next_negotiation_id")
+    if hashed_next_negotiation_id != utils.hash_string(next_negotiation_id):
+        raise ValueError("wrong next_negotiation_id hash")
+
+
 def _join_second_contribution(negotiation_id, contrib):
     text = get_contribution_text(contrib)
     body = text["body"]
+    meta = text["meta"]
+    check_hashed_next_negotiation_id(meta)
     ui.inform("Sending second join contribution.")
 
-    r = client.run_contribution(negotiation_id, body, accept=True)
+    r = client.run_contribution(
+        negotiation_id, body, accept=True, extra_meta=meta)
     d = safe_json_loads(r.text)
     contribution_id = d["data"]["id"]
     ui.inform("Sent contribution %s" % contribution_id)
@@ -546,8 +573,8 @@ def check_ep_process_initial_contribution():
 
 def get_next_neg_from_contrib(contrib):
     text = get_contribution_text(contrib)
-    body = text["body"]
-    return body["info"].get("next_negotiation_id")
+    meta = text["meta"]
+    return meta.get("next_negotiation_id")
 
 
 def register_next_negotiation_id(contrib):

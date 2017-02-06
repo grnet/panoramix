@@ -260,6 +260,9 @@ class ContributionView(CreateView):
             raise PermissionDenied("must filter by negotiation")
         return super(ContributionView, self).retrieve(request, *args, **kwargs)
 
+    def get_queryset(self):
+        return self.queryset.filter(latest=True)
+
     def list(self, request, *args, **kwargs):
         if not self.request.query_params.get("negotiation"):
             raise PermissionDenied("must filter by negotiation")

@@ -249,8 +249,6 @@ class contribution_list(Lister):
         listing = []
 
         for contrib in contribs:
-            if not contrib["latest"]:
-                continue
             realtext = canonical.from_canonical(
                 canonical.from_unicode(contrib["text"]))
             listing.append({
