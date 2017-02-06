@@ -19,11 +19,11 @@ def make_zeus_params(crypto_params):
 
 
 def get_key_id_from_key_data(key_data):
-    return utils.to_unicode(utils.hash_string(key_data))
+    return unicode(utils.hash_string(key_data))
 
 
 def verify(mixnet_data, signature, public, params):
-    signature = canonical.from_canonical(canonical.from_unicode(signature))
+    signature = canonical.from_unicode_canonical(signature)
     crypto = signature['crypto']
     modulus = crypto['modulus']
     generator = crypto['generator']
@@ -120,11 +120,11 @@ def get_mixing_input(enc_tuples, params, public):
 
 
 def encode_message(message):
-    return core.to_canonical(message)
+    return canonical.to_canonical(message)
 
 
 def decode_message(message):
-    return core.from_canonical(utils.from_unicode(message))
+    return canonical.from_unicode_canonical(message)
 
 
 def process_booth(inbox_messages):
@@ -272,9 +272,8 @@ class Client(object):
         if endpoint_type == "ZEUS_BOOTH":
             return process_booth(messages)
         if endpoint_type == "ZEUS_SK_MIX":
-            endpoint_params = canonical.from_canonical(
-                canonical.from_unicode(
-                    endpoint["endpoint_params"]))
+            endpoint_params = canonical.from_unicode_canonical(
+                endpoint["endpoint_params"])
             election_public = utils.unicode_to_int(
                 endpoint_params["election_public"])
             return mix(messages, self.params, election_public)

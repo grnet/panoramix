@@ -90,8 +90,8 @@ class config_set(Command):
 
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
-        key = utils.to_unicode(vargs["key"])
-        value = utils.to_unicode(vargs["value"])
+        key = utils.locale_to_unicode(vargs["key"])
+        value = utils.locale_to_unicode(vargs["value"])
         typ = vargs["type"] or T_STRING
         conversion = CONVERSIONS.get(typ)
         if conversion is None:
@@ -110,7 +110,7 @@ class config_unset(Command):
 
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
-        key = utils.to_unicode(vargs["key"])
+        key = utils.locale_to_unicode(vargs["key"])
         cfg.pop(key)
         print("Deleted key '%s' from config." % key)
 
@@ -142,7 +142,7 @@ class peer_create(NegotiationCommand):
         name = vargs["name"]
         if name is None:
             name = cfg.get("NAME")
-        name = utils.to_unicode(name)
+        name = utils.locale_to_unicode(name)
         owners = vargs["owners"]
         owners = owners.split(',') if owners else []
 
@@ -249,8 +249,7 @@ class contribution_list(Lister):
         listing = []
 
         for contrib in contribs:
-            realtext = canonical.from_canonical(
-                canonical.from_unicode(contrib["text"]))
+            realtext = canonical.from_unicode_canonical(contrib["text"])
             listing.append({
                 "body": realtext["body"],
                 "meta": realtext["meta"],

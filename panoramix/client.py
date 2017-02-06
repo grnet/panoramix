@@ -330,8 +330,7 @@ class PanoramixClient(object):
         data = {"id": contribution_id, "negotiation": negotiation_id}
         r = self.clients.contributions.retrieve(contribution_id, params=data)
         contrib = safe_json_loads(r.text)["data"]
-        realtext = canonical.from_canonical(
-            canonical.from_unicode(contrib["text"]))
+        realtext = canonical.from_unicode_canonical(contrib["text"])
         body = realtext["body"]
         r = self.run_contribution(negotiation_id, body, True)
         d = safe_json_loads(r.text)["data"]
@@ -513,8 +512,7 @@ class PanoramixClient(object):
         return responses
 
     def write_to_file(self, message, filename):
-        text = canonical.from_canonical(
-            canonical.from_unicode(message["text"]))
+        text = canonical.from_unicode_canonical(message["text"])
         with open(filename, "a") as f:
             f.write("%s\n\0" % text)
         return (message["id"], "file", filename)

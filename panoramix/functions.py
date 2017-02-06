@@ -52,7 +52,7 @@ def check_close_negotiation(negotiation):
     text_set = set(c.text for c in latests)
     if len(text_set) == 1:
         text = text_set.pop()
-        unpacked_text = canonical.from_canonical(utils.from_unicode(text))
+        unpacked_text = canonical.from_unicode_canonical(text)
         meta = unpacked_text.get("meta", {})
         accept = meta.get("accept", False)
         if accept:
@@ -127,8 +127,7 @@ def check_permission(peer_id, owners, signings, request_peer_id):
 
 def get_body_and_meta(consensus):
     consensus_text = consensus["text"]
-    unpacked_text = canonical.from_canonical(
-        utils.from_unicode(consensus_text))
+    unpacked_text = canonical.from_unicode_canonical(consensus_text)
     body = unpacked_text.get("body", {})
     canonical_body = canonical.to_canonical(body)
     meta = unpacked_text.get("meta", {})
@@ -498,4 +497,4 @@ def check_cycle_can_process(endpoint):
 
 
 def verify(mixnet_data, signature, public=None):
-    return backend.verify(mixnet_data, signature, public)
+    return backend.verify(utils.utf8(mixnet_data), signature, public)

@@ -27,8 +27,7 @@ def mixnet_url_process(mixnet_url):
     cfg.set_value("CRYPTO_BACKEND", backend)
     owner_ids = get_owners_sorted(peer)
     cfg.set_value("OWNER_IDS", owner_ids)
-    crypto_params = canonical.from_canonical(
-        canonical.from_unicode(peer["crypto_params"]))
+    crypto_params = canonical.from_unicode_canonical(peer["crypto_params"])
     cfg.set_value("CRYPTO_PARAMS", crypto_params)
     endpoint = client.get_open_endpoint_of_peer(peer_id)
     if endpoint is None:

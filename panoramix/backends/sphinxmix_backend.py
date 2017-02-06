@@ -56,7 +56,7 @@ def sign(body, params, secret, public):
 
 
 def verify(mixnet_data, signature, params):
-    signature = canonical.from_canonical(canonical.from_unicode(signature))
+    signature = canonical.from_unicode_canonical(signature)
     digest = sha1(mixnet_data).digest()
     sig = tuple(map(bn_decode, (signature["r"], signature["s"])))
     ver_key = mk_EcPt(signature["public"], params)
@@ -101,7 +101,7 @@ def encode_message(message):
 
 
 def decode_message(message):
-    return canonical.from_canonical(utils.from_unicode(message))
+    return canonical.from_unicode_canonical(message)
 
 
 def encrypt(data, recipients, params):

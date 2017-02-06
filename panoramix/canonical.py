@@ -1,13 +1,4 @@
 from cStringIO import StringIO
-import sys
-
-ENCODING = sys.getfilesystemencoding() or 'UTF-8'
-
-
-def from_unicode(s):
-    if type(s) is unicode:
-        return s.encode(ENCODING)
-    return s
 
 
 def to_canonical(obj, out=None):
@@ -183,3 +174,8 @@ def from_canonical(inp, unicode_strings=0, s=''):
         m = "byte %d: invalid object tag '%d'" % (inp.tell()-z, c)
         raise ValueError(m)
 
+
+def from_unicode_canonical(inp):
+    if isinstance(inp, unicode):
+        inp = inp.encode('utf-8')
+    return from_canonical(inp, unicode_strings=True)

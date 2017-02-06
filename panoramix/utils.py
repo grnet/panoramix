@@ -23,19 +23,19 @@ def show_serial(serial):
 def hash_message(text, sender, recipient, serial):
     hasher = hashlib.sha256()
     hasher.update(show_serial(serial))
-    hasher.update(from_unicode(text))
+    hasher.update(utf8(text))
     hasher.update(sender)
     hasher.update(recipient)
     return hasher.hexdigest()
 
 
-def from_unicode(s):
+def utf8(s):
     if type(s) is unicode:
-        return s.encode(ENCODING)
+        return s.encode("UTF-8")
     return s
 
 
-def to_unicode(s):
+def locale_to_unicode(s):
     if type(s) is unicode:
         return s
     return unicode(s, ENCODING)

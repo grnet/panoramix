@@ -13,8 +13,7 @@ class AuthUser(object):
 
 class Auth(BaseAuthentication):
     def verify(self, mixnet_data, signature, public=None):
-        canonical_data = canonical.to_canonical(
-            canonical.from_unicode(mixnet_data))
+        canonical_data = canonical.to_canonical(mixnet_data)
         valid, key_id = functions.verify(
             canonical_data, signature, public=public)
         if not valid:

@@ -190,8 +190,7 @@ def check_consensus(negotiation):
 
 
 def get_negotiation_text(negotiation):
-    return canonical.from_canonical(
-        canonical.from_unicode(negotiation["text"]))
+    return canonical.from_unicode_canonical(negotiation["text"])
 
 
 def get_negotiation(negotiation_id):
@@ -305,8 +304,7 @@ def join_crypto_params_set():
     contrib = cfg.get("JOIN_COORD_INITIAL_CONTRIBUTION")
     text = get_contribution_text(contrib)
     crypto_params = text["body"]["data"]["crypto_params"]
-    crypto_params = canonical.from_canonical(
-        canonical.from_unicode(crypto_params))
+    crypto_params = canonical.from_unicode_canonical(crypto_params)
     default = "accept"
     response = ui.ask_value("response",
                             "Proposed crypto params: '%s'; "
@@ -422,8 +420,7 @@ def join_ep_contribution():
 
 
 def get_contribution_text(contribution):
-    return canonical.from_canonical(
-        canonical.from_unicode(contribution["text"]))
+    return canonical.from_unicode_canonical(contribution["text"])
 
 
 def mk_owner_d(owner):
