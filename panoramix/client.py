@@ -514,7 +514,7 @@ class PanoramixClient(object):
     def write_to_file(self, message, filename):
         text = canonical.from_unicode_canonical(message["text"])
         with open(filename, "a") as f:
-            f.write("%s\n\0" % text)
+            f.write("%s\n\0" % utils.unicode_to_locale(text))
         return (message["id"], "file", filename)
 
     def message_forward(self, message):

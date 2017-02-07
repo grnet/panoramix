@@ -41,6 +41,12 @@ def locale_to_unicode(s):
     return unicode(s, ENCODING)
 
 
+def unicode_to_locale(s):
+    if type(s) is unicode:
+        return s.encode(ENCODING)
+    return s
+
+
 def int_to_unicode(i):
     return unicode('%x' % i)
 

@@ -599,13 +599,14 @@ def crypto_params_wizard():
 def key_and_peer_wizard():
     on("KEY", common.set_key_wizard)
     client.register_crypto_client(cfg)
-    on("PEER_NAME", lambda: ui.ask_value(
-        "PEER_NAME", "Specify name to register as peer"))
+    on("PEER_NAME", lambda: utils.locale_to_unicode(
+        ui.ask_value("PEER_NAME", "Specify name to register as peer")))
     on("PEER_ID", do_register_wizard, client.peer_import)
 
 
 def create_contribution_id():
-    name = ui.ask_value("name", "Choose mixnet peer name")
+    name = utils.locale_to_unicode(
+        ui.ask_value("name", "Choose mixnet peer name"))
     negotiation_id = cfg.get("CREATE_NEGOTIATION_ID")
     return create_provisional_peer_contrib(negotiation_id, name)
 
@@ -638,7 +639,8 @@ def get_max_size():
 
 
 def get_description():
-    return ui.ask_value("EP_DESCRIPTION", "Give description: ")
+    return utils.locale_to_unicode(
+        ui.ask_value("EP_DESCRIPTION", "Give description: "))
 
 
 def get_endpoint_type():
@@ -654,8 +656,8 @@ def get_endpoint_type():
 
 
 def get_endpoint_name():
-    return ui.ask_value(
-        "ENDPOINT_NAME", "Specify endpoint name to create on combined peer")
+    return utils.locale_to_unicode(ui.ask_value(
+        "ENDPOINT_NAME", "Specify endpoint name to create on combined peer"))
 
 
 def get_endpoint_id():
