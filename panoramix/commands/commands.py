@@ -17,14 +17,6 @@ reload(sys)
 sys.setdefaultencoding('UTF-8')
 
 
-def safe_json_loads(s):
-    try:
-        return json.loads(s)
-    except ValueError:
-        print >> sys.stderr, s
-        raise
-
-
 def filter_data_only(lst):
     return [d["data"] for d in lst]
 
@@ -193,7 +185,7 @@ class peer_list(Lister):
     def take_action(self, parsed_args):
         client = mk_panoramix_client(cfg)
         r = client.clients.peers.list()
-        ps = safe_json_loads(r.text)
+        ps = r.json()
         return from_list_of_dict(filter_data_only(ps))
 
 
@@ -213,7 +205,7 @@ class negotiation_list(Lister):
     def take_action(self, parsed_args):
         client = mk_panoramix_client(cfg)
         r = client.clients.negotiations.list()
-        ps = safe_json_loads(r.text)
+        ps = r.json()
         return from_list_of_dict(filter_data_only(ps))
 
 
@@ -292,7 +284,7 @@ class negotiation_contribute(Command):
         accept = vargs["accept"]
         client = mk_panoramix_client(cfg)
         r = client.run_contribution(negotiation_id, body, accept)
-        print(r.text)
+        print(r.json())
 
 
 class consensus_info(ShowOne):
@@ -310,7 +302,7 @@ class consensus_info(ShowOne):
         client = mk_panoramix_client(cfg)
         r = client.clients.negotiations.list(
             params={"consensus": consensus_id})
-        conses = safe_json_loads(r.text)
+        conses = r.json()
         assert len(conses) == 1
         cons = conses[0]["data"]
         return cons.keys(), cons.values()

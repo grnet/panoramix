@@ -1,5 +1,3 @@
-import sys
-import json
 from collections import namedtuple
 import importlib
 
@@ -9,14 +7,6 @@ from apimas.modeling.core.exceptions import ApimasClientException
 from panoramix.spec import SPEC
 from panoramix import canonical
 from panoramix import utils
-
-
-def safe_json_loads(s):
-    try:
-        return json.loads(s)
-    except ValueError:
-        print >> sys.stderr, s
-        raise
 
 
 ClientTuple = namedtuple(
@@ -160,9 +150,7 @@ class PanoramixClient(object):
             if resource_id is not None:
                 kwargs["resource_id"] = resource_id
             r = callpoint(**kwargs)
-        outp = r.text
-        if outp:
-            outp = safe_json_loads(outp)
+        outp = r.json()
         return bool(negotiation_id), outp
 
     def negotiation_create(self):
@@ -173,11 +161,11 @@ class PanoramixClient(object):
         }
         request = self.mk_signed_request(payload)
         r = self.clients.negotiations.create(data=request)
-        return safe_json_loads(r.text)["data"]
+        return r.json()["data"]
 
     def negotiation_info(self, negotiation_id):
         r = self.clients.negotiations.retrieve(negotiation_id)
-        return safe_json_loads(r.text)["data"]
+        return r.json()["data"]
 
     def with_self_consensus(self, action, kwargs):
         negotiation = self.negotiation_create()
@@ -213,19 +201,19 @@ class PanoramixClient(object):
         if resource_id is not None:
             kwargs["resource_id"] = resource_id
         r = callpoint(**kwargs)
-        return safe_json_loads(r.text)
+        return r.json()
 
     def peer_info(self, peer_id):
         try:
             r = self.clients.peers.retrieve(peer_id)
-            return safe_json_loads(r.text)["data"]
+            return r.json()["data"]
         except ApimasClientException:
             return None
 
     def endpoint_info(self, endpoint_id):
         try:
             r = self.clients.endpoints.retrieve(endpoint_id)
-            return safe_json_loads(r.text)["data"]
+            return r.json()["data"]
         except ApimasClientException:
             return None
 
@@ -276,7 +264,7 @@ class PanoramixClient(object):
 
     def peer_import(self, peer_id):
         r = self.clients.peers.retrieve(peer_id)
-        d = safe_json_loads(r.text)["data"]
+        d = r.json()["data"]
         public_key = d["key_data"]
         self.crypto_client.register_key(public_key)
         return public_key
@@ -311,7 +299,7 @@ class PanoramixClient(object):
     def endpoint_list(self, peer_id=None, status=None):
         params = {"peer_id": peer_id, "status": status}
         r = self.clients.endpoints.list(params=params)
-        return filter_data_only(safe_json_loads(r.text))
+        return filter_data_only(r.json())
 
     def get_open_endpoint_of_peer(self, peer_id):
         endpoints = self.endpoint_list(peer_id=peer_id, status="OPEN")
@@ -323,17 +311,17 @@ class PanoramixClient(object):
         params = {"negotiation": negotiation_id}
 
         r = self.clients.contributions.list(params=params)
-        contribs = safe_json_loads(r.text)
+        contribs = r.json()
         return contribs
 
     def contribution_accept(self, negotiation_id, contribution_id):
         data = {"id": contribution_id, "negotiation": negotiation_id}
         r = self.clients.contributions.retrieve(contribution_id, params=data)
-        contrib = safe_json_loads(r.text)["data"]
+        contrib = r.json()["data"]
         realtext = canonical.from_unicode_canonical(contrib["text"])
         body = realtext["body"]
         r = self.run_contribution(negotiation_id, body, True)
-        d = safe_json_loads(r.text)["data"]
+        d = r.json()["data"]
         return d
 
     def prepare_send_message(
@@ -366,12 +354,12 @@ class PanoramixClient(object):
         request, _ = self.prepare_send_message(
             endpoint_id, INBOX, enc_data, keyid, send_to)
         r = self.clients.messages.create(data=request)
-        return safe_json_loads(r.text)
+        return r.json()
 
     def box_list(self, endpoint_id, box):
         r = self.clients.messages.list(params={
             "endpoint_id": endpoint_id, "box": box})
-        ms = safe_json_loads(r.text)
+        ms = r.json()
         return filter_data_only(ms)
 
     def get_latest_consensus(self, endpoint, on_status=None):
@@ -462,11 +450,11 @@ class PanoramixClient(object):
 
     def inbox_process(self, endpoint_id, peer_id, upload):
         endpoint_resp = self.clients.endpoints.retrieve(endpoint_id)
-        endpoint = safe_json_loads(endpoint_resp.text)["data"]
+        endpoint = endpoint_resp.json()["data"]
 
         r = self.clients.messages.list(params={
             "endpoint_id": endpoint_id, "box": ACCEPTED})
-        messages = filter_data_only(safe_json_loads(r.text))
+        messages = filter_data_only(r.json())
 
         responses = []
         process_log = {}
@@ -493,7 +481,7 @@ class PanoramixClient(object):
         if upload:
             for request in requests:
                 r = self.clients.messages.create(data=request)
-                d = safe_json_loads(r.text)
+                d = r.json()
                 responses.append(d)
 
         process_log = {
@@ -505,7 +493,7 @@ class PanoramixClient(object):
     def messages_forward(self, endpoint_id):
         r = self.clients.messages.list(params={
             "endpoint_id": endpoint_id, "box": OUTBOX})
-        messages = filter_data_only(safe_json_loads(r.text))
+        messages = filter_data_only(r.json())
         responses = []
         for message in messages:
             responses.append(self.message_forward(message))
@@ -532,13 +520,12 @@ class PanoramixClient(object):
             message["sender"],
             recipient)
         r = self.clients.messages.create(data=request)
-        assert r.text
         return (message["id"], "peer", recipient)
 
     def outbox_forward(self, from_endpoint_id, to_endpoint_id):
         r = self.clients.messages.list(params={
             "endpoint_id": from_endpoint_id, "box": OUTBOX})
-        messages = filter_data_only(safe_json_loads(r.text))
+        messages = filter_data_only(r.json())
         responses = []
         if not messages:
             return responses
@@ -551,6 +538,6 @@ class PanoramixClient(object):
                 message["sender"],
                 message["recipient"])
             r = self.clients.messages.create(data=request)
-            d = safe_json_loads(r.text)
+            d = r.json()
             responses.append(d)
         return responses

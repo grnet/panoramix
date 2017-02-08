@@ -1,7 +1,7 @@
 import argparse
 
 from panoramix import utils
-from panoramix.client import safe_json_loads, filter_data_only
+from panoramix.client import filter_data_only
 from panoramix import canonical
 from panoramix.wizard_common import ui, BACKENDS, abort, client,\
     Block, cfg
@@ -81,7 +81,7 @@ def _check_ep_negotiation(negotiation_id, initial_contrib):
     meta = hash_meta_next_negotiation(meta)
     r = client.run_contribution(
         negotiation_id, body, accept=True, extra_meta=meta)
-    d = safe_json_loads(r.text)
+    d = r.json()
     contribution = d["data"]
     ui.inform("Sent contribution %s" % contribution["id"])
     return contribution
@@ -359,7 +359,7 @@ def join_contribution():
     extra_meta["invitation_id"] = invitation_id
     r = client.run_contribution(
         negotiation_id, body, accept=False, extra_meta=extra_meta)
-    d = safe_json_loads(r.text)
+    d = r.json()
     contribution_id = d["data"]["id"]
     ui.inform("Sent contribution %s" % contribution_id)
     return contribution_id
@@ -379,7 +379,7 @@ def join_ep_close_contribution():
     meta = hash_meta_next_negotiation(text["meta"])
     r = client.run_contribution(
         negotiation_id, body, accept=True, extra_meta=meta)
-    d = safe_json_loads(r.text)
+    d = r.json()
     contribution = d["data"]
     ui.inform("Sent contribution %s" % contribution["id"])
     return contribution
@@ -400,7 +400,7 @@ def join_ep_process_contribution():
     meta = hash_meta_next_negotiation(text["meta"])
     r = client.run_contribution(
         negotiation_id, body, accept=True, extra_meta=meta)
-    d = safe_json_loads(r.text)
+    d = r.json()
     contribution = d["data"]
     ui.inform("Sent contribution %s" % contribution["id"])
     return contribution
@@ -413,7 +413,7 @@ def join_ep_contribution():
     text = get_contribution_text(initial_contrib)
     body = text["body"]
     r = client.run_contribution(negotiation_id, body, accept=False)
-    d = safe_json_loads(r.text)
+    d = r.json()
     contribution = d["data"]
     ui.inform("Sent contribution %s" % contribution["id"])
     return contribution
@@ -522,7 +522,7 @@ def _join_second_contribution(negotiation_id, contrib):
 
     r = client.run_contribution(
         negotiation_id, body, accept=True, extra_meta=meta)
-    d = safe_json_loads(r.text)
+    d = r.json()
     contribution_id = d["data"]["id"]
     ui.inform("Sent contribution %s" % contribution_id)
     return contribution_id
