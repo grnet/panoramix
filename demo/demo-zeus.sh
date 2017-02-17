@@ -110,7 +110,9 @@ ELECTION_PUBLIC="$(exe ${CMD} peer info --peer-id ${MIX_PEER} -f value -c key_da
 echo
 read -p "Next: negotiate to create and open booth endpoint; press <enter>. " y
 
-run_with_neg INBOX_NEG "endpoint create --endpoint-id BOOTH1 --peer-id ${MIX_PEER} --size-min 2 --size-max 10 --endpoint-type ZEUS_BOOTH"
+FINAL_DECRYPT_EP="FINAL_DECR1"
+
+run_with_neg INBOX_NEG "endpoint create --endpoint-id BOOTH1 --peer-id ${MIX_PEER} --size-min 2 --size-max 10 --endpoint-type ZEUS_BOOTH --link ${FINAL_DECRYPT_EP} OUTBOX PROCESSBOX"
 INBOX_EP="${consensus_result}"
 BOOTH_CREATE_CONSENSUS="${consensus}"
 
@@ -136,47 +138,31 @@ run_with_neg CLOSE_INBOX_NEG "inbox close --endpoint-id ${INBOX_EP} --on-last-co
 BOOTH_CLOSE_CONSENSUS="${consensus}"
 
 echo
-read -p "Next: process inbox and negotiate results; press <enter>. " y
-
-FIRST_PEER="$(ls -1 ${SHARE_CHANNEL}/peers | sort | head -n 1)"
-if [ "${KEYID}" = "${FIRST_PEER}" ]; then
-    UPLOAD="--upload"
-else
-    UPLOAD=
-fi
-
-PROCESS_LOG=/tmp/INBOX_PROCESS_LOG_${NAME}
-exe ${CMD} inbox process --peer-id "${MIX_PEER}" --endpoint-id "${INBOX_EP}" --process-log-file "${PROCESS_LOG}" ${UPLOAD}
-
-run_with_neg INBOX_PROCESSED_ACK_NEG "processed ack --endpoint-id ${INBOX_EP} --on-last-consensus-id ${BOOTH_CLOSE_CONSENSUS} --from-log ${PROCESS_LOG}"
-
-exe ${CMD} outbox list --endpoint-id "${INBOX_EP}"
-
-echo
 read -p "Next: peers will mix the messages consecutively; press <enter>. " y
 
 PREVIOUS="$(ls -1 ${SHARE_CHANNEL}/peers | sort | grep -B 1 ${KEYID} | head -n 1)"
 
 if [ "${PREVIOUS}" = "${KEYID}" ]; then
-    INBOX_MIX_PEER="${MIX_PEER}"
     INBOX_MIX_EP="${INBOX_EP}"
+    FROM_BOX="ACCEPTED"
 else
-    echo "Waiting input from previous peer..."
-    INBOX_MIX_PEER="${PREVIOUS}"
-    INBOX_MIX_EP="$(cat_ready_file ${SHARE_CHANNEL}/mixes/INBOX_MIX_EP_${PREVIOUS})"
+    INBOX_MIX_EP="SK_MIX1_${PREVIOUS:0:7}"
+    FROM_BOX="OUTBOX"
 fi
 
 echo
 read -p "Will make a ZEUS_SK_MIX endpoint in ${NAME}, get messages from ${INBOX_MIX_EP} and mix them; press <enter>. " y
 
-MIX_EP="SK_MIX1_${NAME}"
-with_self_consensus "endpoint create --endpoint-id ${MIX_EP} --peer-id ${KEYID} --size-min 2 --size-max 10 --endpoint-type ZEUS_SK_MIX --param election_public ${ELECTION_PUBLIC}"
+MIX_EP="SK_MIX1_${KEYID:0:7}"
+with_self_consensus "endpoint create --endpoint-id ${MIX_EP} --peer-id ${KEYID} --size-min 2 --size-max 10 --endpoint-type ZEUS_SK_MIX --param election_public ${ELECTION_PUBLIC} --link ${INBOX_MIX_EP} ${FROM_BOX} INBOX"
 MIX_CREATE_CONSENSUS="${consensus}"
 
-exe ${CMD} outbox forward --from-endpoint-id "${INBOX_MIX_EP}" --to-endpoint-id "${MIX_EP}"
 
-write_hashes_log ${MIX_EP} ${ACCEPTED_LOG}
-with_self_consensus "inbox close --endpoint-id ${MIX_EP} --on-last-consensus-id ${MIX_CREATE_CONSENSUS} --from-log ${ACCEPTED_LOG}"
+INBOX_LOG=/tmp/INBOX_LOG_${NAME}
+rm $INBOX_LOG
+run_if_not_file "inbox get --endpoint-id ${MIX_EP} --hashes-log-file ${INBOX_LOG}" "${INBOX_LOG}"
+
+with_self_consensus "inbox close --endpoint-id ${MIX_EP} --on-last-consensus-id ${MIX_CREATE_CONSENSUS} --from-log ${INBOX_LOG}"
 MIX_CLOSE_CONSENSUS="${consensus}"
 
 PROCESS_LOG=/tmp/MIX_PROCESS_LOG_${NAME}
@@ -194,14 +180,14 @@ LAST_MIX_EP="$(cat_ready_file ${SHARE_CHANNEL}/mixes/INBOX_MIX_EP_${LAST_MIX_PEE
 echo
 read -p "Will make a ZEUS_SK_PARTIAL_DECRYPT endpoint in ${NAME}, get messages from the last mix outbox and partially decrypt them; press <enter>. " y
 
-PARTIAL_DECRYPT_EP="PART_DECR1_${NAME}"
-with_self_consensus "endpoint create --endpoint-id ${PARTIAL_DECRYPT_EP} --peer-id ${KEYID} --size-min 2 --size-max 10 --endpoint-type ZEUS_SK_PARTIAL_DECRYPT"
+PARTIAL_DECRYPT_EP="PART_DECR1_${KEYID:0:7}"
+with_self_consensus "endpoint create --endpoint-id ${PARTIAL_DECRYPT_EP} --peer-id ${KEYID} --size-min 2 --size-max 10 --endpoint-type ZEUS_SK_PARTIAL_DECRYPT --link ${LAST_MIX_EP} OUTBOX INBOX"
 PARTIAL_DECRYPT_CREATE_CONSENSUS="${consensus}"
 
-exe ${CMD} outbox forward --from-endpoint-id "${LAST_MIX_EP}" --to-endpoint-id "${PARTIAL_DECRYPT_EP}"
+rm ${INBOX_LOG}
+run_if_not_file "inbox get --endpoint-id ${PARTIAL_DECRYPT_EP} --hashes-log-file ${INBOX_LOG}" "${INBOX_LOG}"
 
-write_hashes_log ${PARTIAL_DECRYPT_EP} ${ACCEPTED_LOG}
-with_self_consensus "inbox close --endpoint-id ${PARTIAL_DECRYPT_EP} --on-last-consensus-id ${PARTIAL_DECRYPT_CREATE_CONSENSUS} --from-log ${ACCEPTED_LOG}"
+with_self_consensus "inbox close --endpoint-id ${PARTIAL_DECRYPT_EP} --on-last-consensus-id ${PARTIAL_DECRYPT_CREATE_CONSENSUS} --from-log ${INBOX_LOG}"
 PARTIAL_DECRYPT_CLOSE_CONSENSUS="${consensus}"
 
 PROCESS_LOG=/tmp/PART_DECRYPT_PROCESS_LOG_${NAME}
@@ -212,35 +198,33 @@ with_self_consensus "processed ack --endpoint-id ${PARTIAL_DECRYPT_EP} --on-last
 echo
 read -p "Next: Negotiate a final decryption endpoint; all peers will upload their partial decryptions there; press <enter>. " y
 
-FINAL_DECRYPT_EP="FINAL_DECR1"
-run_with_neg FINAL_DECRYPT_CREATE_NEG "endpoint create --endpoint-id ${FINAL_DECRYPT_EP} --peer-id ${MIX_PEER} --size-min 2 --size-max 10 --endpoint-type ZEUS_SK_COMBINE"
+SORTED_PEERS="$(ls -1 ${SHARE_CHANNEL}/peers | sort)"
+LINKS=""
+for peer in ${SORTED_PEERS}; do
+    LINKS+=" --link PART_DECR1_${peer:0:7} OUTBOX INBOX"
+done
+
+run_with_neg FINAL_DECRYPT_CREATE_NEG "endpoint create --endpoint-id ${FINAL_DECRYPT_EP} --peer-id ${MIX_PEER} --size-min 2 --size-max 10 --endpoint-type ZEUS_SK_COMBINE $LINKS"
 FINAL_DECRYPT_CREATE_CONSENSUS="${consensus}"
 
-exe ${CMD} outbox forward --from-endpoint-id "${PARTIAL_DECRYPT_EP}" --to-endpoint-id "${FINAL_DECRYPT_EP}"
+DRY_RUN=""
+if [ "${PREVIOUS}" != "${KEYID}" ]; then
+    DRY_RUN="--dry-run"
+fi
 
-touch "${SHARE_CHANNEL}/uploads/${KEYID}"
-
-echo Checking that all peers have uploaded...
-while true; do
-      uploaded="$(ls -1 ${SHARE_CHANNEL}/uploads | wc -l)"
-      if ((uploaded == NR_PEERS)); then
-          break
-      else
-          sleep 0.5
-      fi
-done
+rm ${INBOX_LOG}
+run_if_not_file "inbox get --endpoint-id ${FINAL_DECRYPT_EP} --hashes-log-file ${INBOX_LOG} ${DRY_RUN}" "${INBOX_LOG}"
 
 echo
 read -p "Next: negotiate closing the final decryption inbox; press <enter>. " y
 
-write_hashes_log ${FINAL_DECRYPT_EP} ${ACCEPTED_LOG}
-run_with_neg FINAL_DECRYPT_CLOSE_NEG "inbox close --endpoint-id ${FINAL_DECRYPT_EP} --on-last-consensus-id ${FINAL_DECRYPT_CREATE_CONSENSUS} --from-log ${ACCEPTED_LOG}"
+run_with_neg FINAL_DECRYPT_CLOSE_NEG "inbox close --endpoint-id ${FINAL_DECRYPT_EP} --on-last-consensus-id ${FINAL_DECRYPT_CREATE_CONSENSUS} --from-log ${INBOX_LOG}"
 FINAL_DECRYPT_CLOSE_CONSENSUS="${consensus}"
 
 echo
 read -p "Next: process inbox and negotiate results; press <enter>. " y
 
-if [ "${KEYID}" = "${FIRST_PEER}" ]; then
+if [ "${PREVIOUS}" = "${KEYID}" ]; then
     UPLOAD="--upload"
 else
     UPLOAD=
@@ -252,3 +236,14 @@ exe ${CMD} inbox process --peer-id "${MIX_PEER}" --endpoint-id "${FINAL_DECRYPT_
 run_with_neg FINAL_DECRYPT_PROCESSED_ACK_NEG "processed ack --endpoint-id ${FINAL_DECRYPT_EP} --on-last-consensus-id ${FINAL_DECRYPT_CLOSE_CONSENSUS} --from-log ${PROCESS_LOG}"
 
 exe ${CMD} outbox list --endpoint-id "${FINAL_DECRYPT_EP}"
+
+echo
+read -p "Next: upload results to booth endpoint and publish; press <enter>. " y
+
+PROCESS_LOG=/tmp/INBOX_PROCESS_LOG_${NAME}
+rm ${PROCESS_LOG}
+run_if_not_file "processed get --endpoint-id ${INBOX_EP} --hashes-log-file ${PROCESS_LOG} --serialized ${DRY_RUN}" "${PROCESS_LOG}"
+
+run_with_neg INBOX_PROCESSED_ACK_NEG "processed ack --endpoint-id ${INBOX_EP} --on-last-consensus-id ${BOOTH_CLOSE_CONSENSUS} --from-log ${PROCESS_LOG}"
+
+exe ${CMD} outbox list --endpoint-id "${INBOX_EP}"

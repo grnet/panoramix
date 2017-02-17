@@ -60,6 +60,14 @@ OUTBOX = "OUTBOX"
 PROCESSBOX = "PROCESSBOX"
 ACCEPTED = "ACCEPTED"
 
+CLOSED = "CLOSED"
+PROCESSED = "PROCESSED"
+
+STATUS_FOR_BOX = {
+    ACCEPTED: CLOSED,
+    OUTBOX: PROCESSED,
+}
+
 
 def get_setting_or_fail(cfg, name):
     value = cfg.get(name)
@@ -271,7 +279,7 @@ class PanoramixClient(object):
 
     def endpoint_create(
             self, endpoint_id, peer_id, endpoint_type, endpoint_params,
-            size_min, size_max, description, consensus_id=None,
+            size_min, size_max, description, links=None, consensus_id=None,
             negotiation_id=None, accept=False,
             next_negotiation_id=None):
         info = mk_info("endpoint", "create")
@@ -283,6 +291,7 @@ class PanoramixClient(object):
                 "endpoint_type": endpoint_type,
                 "endpoint_params": endpoint_params,
                 "description": description,
+                "links": links,
                 "size_min": size_min,
                 "size_max": size_max,
                 "status": "OPEN",
@@ -325,8 +334,7 @@ class PanoramixClient(object):
         return d
 
     def prepare_send_message(
-            self, endpoint_id, box, text, sender, recipient, send_hash=False,
-            serial=None):
+            self, endpoint_id, box, text, sender, recipient, serial=None):
         data = {
             "box": box,
             "endpoint_id": endpoint_id,
@@ -336,22 +344,18 @@ class PanoramixClient(object):
             "serial": serial,
         }
 
-        msg_hash = utils.hash_message(text, sender, recipient, serial)
-        if send_hash:
-            data["message_hash"] = msg_hash
-
         attrs = {
             "info": mk_info("message", "create"),
             "data": data,
         }
         request = self.mk_signed_request(attrs)
-        return request, msg_hash
+        return request
 
     def message_send(self, endpoint_id, data, recipients):
         enc_data = self.crypto_client.encrypt(data, recipients)
         send_to = recipients[0]
         keyid = self.crypto_client.get_keyid()
-        request, _ = self.prepare_send_message(
+        request = self.prepare_send_message(
             endpoint_id, INBOX, enc_data, keyid, send_to)
         r = self.clients.messages.create(data=request)
         return r.json()
@@ -448,6 +452,31 @@ class PanoramixClient(object):
         self.clients = mk_clients(self.catalog_url)
         return r
 
+    def transport_to_processbox(self, processed_data, endpoint):
+        requests = []
+        endpoint_id = endpoint["endpoint_id"]
+        peer_id = endpoint["peer_id"]
+        for serial, (recipient, text) in enumerate(processed_data):
+            request = self.prepare_send_message(
+                endpoint_id, PROCESSBOX, text,
+                peer_id, recipient, serial=serial)
+            requests.append(request)
+        return requests
+
+    def hash_serialized_messages(self, sender, processed_data):
+        msg_hashes = []
+        for serial, (recipient, text) in enumerate(processed_data):
+            msg_hashes.append(
+                utils.hash_message(text, sender, recipient, serial))
+        return msg_hashes
+
+    def mk_process_log(self, msg_hashes, proof, wrap=True):
+        hashes = hash_dict_wrap(msg_hashes) if wrap else msg_hashes
+        return {
+            "message_hashes": hashes,
+            "process_proof": canonical.to_canonical(proof),
+        }
+
     def inbox_process(self, endpoint_id, peer_id, upload):
         endpoint_resp = self.clients.endpoints.retrieve(endpoint_id)
         endpoint = endpoint_resp.json()["data"]
@@ -461,33 +490,22 @@ class PanoramixClient(object):
         if not messages:
             return responses, process_log
 
-        messages_text = [m["text"] for m in messages]
-        messages_recipient = [m["recipient"] for m in messages]
-        processed_data, proof = self.crypto_client.process(
-            endpoint, messages_text, recipients=messages_recipient)
-        requests = []
-        msg_hashes = []
-        serial = 0
-        for recipient, text in processed_data:
-            serial += 1
-            if recipient is None:
-                recipient = "dummy_next_recipient"
-            request, msg_hash = self.prepare_send_message(
-                endpoint_id, PROCESSBOX, text,
-                peer_id, recipient, send_hash=False, serial=serial)
-            requests.append(request)
-            msg_hashes.append(msg_hash)
+        try:
+            processed_data, proof = self.crypto_client.process(
+                endpoint, messages)
+        except utils.NoProcessing:
+            return responses, process_log
+
+        msg_hashes = self.hash_serialized_messages(peer_id, processed_data)
+        process_log = self.mk_process_log(msg_hashes, proof)
 
         if upload:
+            requests = self.transport_to_processbox(processed_data, endpoint)
             for request in requests:
                 r = self.clients.messages.create(data=request)
                 d = r.json()
                 responses.append(d)
 
-        process_log = {
-            "message_hashes": hash_dict_wrap(msg_hashes),
-            "process_proof": canonical.to_canonical(proof),
-        }
         return responses, process_log
 
     def messages_forward(self, endpoint_id):
@@ -513,7 +531,7 @@ class PanoramixClient(object):
             return self.write_to_file(message, value)
 
         to_endpoint = self.get_open_endpoint_of_peer(recipient)
-        request, msg_hash = self.prepare_send_message(
+        request = self.prepare_send_message(
             to_endpoint["endpoint_id"],
             INBOX,
             message["text"],
@@ -522,22 +540,67 @@ class PanoramixClient(object):
         r = self.clients.messages.create(data=request)
         return (message["id"], "peer", recipient)
 
-    def outbox_forward(self, from_endpoint_id, to_endpoint_id):
+    def check_input_is_ready(self, links):
+        for link in links:
+            from_endpoint = self.endpoint_info(link["from_endpoint_id"])
+            from_box = link["from_box"]
+            required_status = STATUS_FOR_BOX[from_box]
+            if required_status != from_endpoint["status"]:
+                return False
+        return True
+
+    def get_input_from_link(
+            self, endpoint_id, to_box, serialized=False, dry_run=False):
+        endpoint = self.endpoint_info(endpoint_id)
+        links = [link for link in endpoint["links"]
+                 if link["to_box"] == to_box]
+        if not self.check_input_is_ready(links):
+            return None
+
+        serial = 0 if serialized else None
+        responses = []
+        msg_hashes = []
+        for link in links:
+            rs, mhs, serial = self.box_forward(
+                from_endpoint_id=link["from_endpoint_id"],
+                to_endpoint_id=endpoint_id,
+                from_box=link["from_box"],
+                to_box=link["to_box"],
+                serial=serial,
+                dry_run=dry_run)
+            responses.extend(rs)
+            msg_hashes.extend(mhs)
+        return responses, hash_dict_wrap(msg_hashes)
+
+    def box_forward(self, from_endpoint_id, to_endpoint_id,
+                    from_box, to_box, serial=None, dry_run=False):
         r = self.clients.messages.list(params={
-            "endpoint_id": from_endpoint_id, "box": OUTBOX})
+            "endpoint_id": from_endpoint_id, "box": from_box})
         messages = filter_data_only(r.json())
         responses = []
-        if not messages:
-            return responses
-
+        msg_hashes = []
         for message in messages:
-            request, msg_hash = self.prepare_send_message(
-                to_endpoint_id,
-                INBOX,
+            msg_hash = utils.hash_message(
                 message["text"],
                 message["sender"],
-                message["recipient"])
-            r = self.clients.messages.create(data=request)
-            d = r.json()
-            responses.append(d)
-        return responses
+                message["recipient"],
+                serial)
+            msg_hashes.append(msg_hash)
+            if not dry_run:
+                request = self.prepare_send_message(
+                    to_endpoint_id,
+                    to_box,
+                    message["text"],
+                    message["sender"],
+                    message["recipient"],
+                    serial=serial)
+                r = self.clients.messages.create(data=request)
+                d = r.json()
+                responses.append(d)
+            if serial is not None:
+                serial += 1
+        return responses, msg_hashes, serial
+
+    def outbox_forward(self, from_endpoint_id, to_endpoint_id):
+        return self.box_forward(
+            from_endpoint_id, to_endpoint_id, OUTBOX, INBOX)

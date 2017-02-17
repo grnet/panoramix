@@ -269,6 +269,11 @@ ENDPOINTS = {
             "size_max": aninteger(),  # .initwrite: {}
             "endpoint_type": astring(),  # .initwrite: {}
             "endpoint_params": astring(),  # .initwrite: {}
+            "links": afield({
+                ".structarray": {
+                    "to_box": astring(),
+                    "from_box": astring(),
+                    "from_endpoint_id": astring()}}),  # .initwrite: {}
             "status": astring({".required": {}}),
             "process_proof": astring(),
             "message_hashes": {

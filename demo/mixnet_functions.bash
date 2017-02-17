@@ -33,6 +33,20 @@ contrib_loop () {
     done
 }
 
+run_if_not_file () {
+    COMMAND="$1"
+    FILENAME="$2"
+    while true; do
+        OUTPUT="$(exe ${CMD} ${COMMAND})"
+        if [ ! -f "${FILENAME}" ]; then
+            sleep 0.5
+        else
+            echo $OUTPUT
+            break
+        fi
+    done
+}
+
 with_self_consensus () {
     COMMAND="$1"
     SELF_NEG="$(exe $CMD negotiation create)"

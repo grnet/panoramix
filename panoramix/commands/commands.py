@@ -308,6 +308,11 @@ class consensus_info(ShowOne):
         return cons.keys(), cons.values()
 
 
+def link_arg_to_dict(link):
+    names = ["from_endpoint_id", "from_box", "to_box"]
+    return dict(zip(names, link))
+
+
 class endpoint_create(NegotiationCommand):
     """ create an endpoint """
 
@@ -319,6 +324,10 @@ class endpoint_create(NegotiationCommand):
         add_arguments(parser, args)
         parser.add_argument("--param", action="append",
                             nargs=2, metavar=("KEY", "VALUE"))
+        parser.add_argument("--link", action="append",
+                            nargs=3,
+                            metavar=("FROM_ENDPOINT_ID", "FROM_BOX", "TO_BOX"))
+
         return parser
 
     def take_action(self, parsed_args):
@@ -327,6 +336,8 @@ class endpoint_create(NegotiationCommand):
         endpoint_id = vargs["endpoint_id"]
         endpoint_type = vargs["endpoint_type"]
         params = dict(vargs["param"] or [])
+        links = vargs["link"] or []
+        links = map(link_arg_to_dict, links)
         endpoint_params = canonical.to_canonical(params)
         size_min = int(vargs["size_min"])
         size_max = int(vargs["size_max"])
@@ -338,8 +349,9 @@ class endpoint_create(NegotiationCommand):
         client = mk_panoramix_client(cfg)
         is_contrib, d = client.endpoint_create(
             endpoint_id, peer_id, endpoint_type, endpoint_params,
-            size_min, size_max, description, consensus_id,
-            negotiation_id, accept)
+            size_min, size_max, description, links=links,
+            consensus_id=consensus_id,
+            negotiation_id=negotiation_id, accept=accept)
         id_key = "id" if is_contrib else "endpoint_id"
         print("%s" % d["data"][id_key])
 
@@ -504,21 +516,45 @@ class outbox_list(BoxLister):
     BOX = client_lib.OUTBOX
 
 
-class outbox_forward(Command):
+class box_get(Command):
+    """ Populate box using linked boxes """
+    BOX = None
+
     def get_parser(self, prog_name):
         parser = Command.get_parser(self, prog_name)
-        args = ["--from-endpoint-id", "--to-endpoint-id"]
+        args = ["--endpoint-id", "--hashes-log-file"]
         add_arguments(parser, args)
+        parser.add_argument("--serialized", action="store_true", default=False)
+        parser.add_argument("--dry-run", action="store_true", default=False)
         return parser
 
     def take_action(self, parsed_args):
         vargs = vars(parsed_args)
-        from_endpoint_id = vargs["from_endpoint_id"]
-        to_endpoint_id = vargs["to_endpoint_id"]
+        endpoint_id = vargs["endpoint_id"]
+        hashes_log_file = vargs["hashes_log_file"]
+        serialized = vargs["serialized"]
+        dry_run = vargs["dry_run"]
         client = mk_panoramix_client(cfg)
-        responses = client.outbox_forward(from_endpoint_id, to_endpoint_id)
-        if not responses:
-            print "No messages"
+        r = client.get_input_from_link(
+            endpoint_id, self.BOX, serialized=serialized, dry_run=dry_run)
+        if r is None:
+            print "Input not ready"
             return
+        responses, hashes = r
         for response in responses:
             print("%s" % response["data"]["id"])
+
+        wrapped_hash_log = {"message_hashes": hashes}
+        with open(hashes_log_file, "w") as f:
+            json.dump(wrapped_hash_log, f)
+        print("Wrote %s log in '%s'." % (self.BOX, hashes_log_file))
+
+
+class inbox_get(box_get):
+    """ Populate inbox using linked boxes """
+    BOX = client_lib.INBOX
+
+
+class processed_get(box_get):
+    """ Populate processbox using linked boxes """
+    BOX = client_lib.PROCESSBOX

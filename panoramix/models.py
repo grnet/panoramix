@@ -173,6 +173,20 @@ class Endpoint(models.Model):
             return None
 
 
+class Box(DjangoChoices):
+    INBOX = ChoiceItem("INBOX")
+    ACCEPTED = ChoiceItem("ACCEPTED")
+    PROCESSBOX = ChoiceItem("PROCESSBOX")
+    OUTBOX = ChoiceItem("OUTBOX")
+
+
+class EndpointLink(models.Model):
+    endpoint = models.ForeignKey(Endpoint, related_name="links")
+    to_box = models.CharField(max_length=255, choices=Box.choices)
+    from_box = models.CharField(max_length=255, choices=Box.choices)
+    from_endpoint_id = models.CharField(max_length=255)
+
+
 class EndpointConsensusLog(models.Model):
     endpoint = models.ForeignKey(Endpoint, related_name="consensus_logs")
     consensus_id = models.CharField(max_length=255)
@@ -181,13 +195,6 @@ class EndpointConsensusLog(models.Model):
 
     class Meta:
         index_together = ["endpoint", "id"]
-
-
-class Box(DjangoChoices):
-    INBOX = ChoiceItem("INBOX")
-    ACCEPTED = ChoiceItem("ACCEPTED")
-    PROCESSBOX = ChoiceItem("PROCESSBOX")
-    OUTBOX = ChoiceItem("OUTBOX")
 
 
 class Message(models.Model):

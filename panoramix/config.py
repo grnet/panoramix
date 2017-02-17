@@ -52,7 +52,7 @@ class Config(object):
 
     def pop(self, key):
         cfg = self.cfg()
-        d = cfg.pop(key)
+        d = cfg.pop(key, None)
         self.save()
         return d["value"]
 

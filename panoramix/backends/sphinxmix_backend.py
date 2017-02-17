@@ -132,6 +132,7 @@ def route_message(info, header, delta, params):
 
 
 def process_sphinxmix(enc_messages, params, secret):
+    enc_messages = [m["text"] for m in enc_messages]
     utils.secure_shuffle(enc_messages)
     processed = []
     for message in enc_messages:
@@ -141,10 +142,6 @@ def process_sphinxmix(enc_messages, params, secret):
             info, header, delta, params)
         processed.append((recipient, encode_message(processed_message)))
     return processed, None
-
-
-def process_gateway(messages, recipients):
-    return zip(recipients, messages), None
 
 
 class Server(object):
@@ -208,12 +205,12 @@ class Client(object):
     def encrypt(self, data, recipients):
         return encrypt(data, recipients, self.params)
 
-    def process(self, endpoint, messages, recipients=None):
+    def process(self, endpoint, messages):
         endpoint_type = endpoint["endpoint_type"]
         if endpoint_type == "SPHINXMIX":
             return process_sphinxmix(messages, self.params, self.secret)
         if endpoint_type == "SPHINXMIX_GATEWAY":
-            return process_gateway(messages, recipients)
+            raise utils.NoProcessing(endpoint_type)
         raise ValueError("Unsupported endpoint type")
 
 

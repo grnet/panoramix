@@ -75,3 +75,7 @@ def generate_random_key():
 
 def secure_shuffle(lst):
     random.shuffle(lst, random=system_random.random)
+
+
+class NoProcessing(Exception):
+    pass

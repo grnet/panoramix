@@ -101,12 +101,16 @@ def decrypt(messages, gpg, passphrase):
 
 
 def peel_onion(encrypted_messages, gpg, passphrase):
+    encrypted_messages = [m["text"] for m in encrypted_messages]
     mixed = mix(encrypted_messages)
-    return utils.with_recipient(decrypt(mixed, gpg, passphrase)), None
+    return (utils.with_recipient(decrypt(mixed, gpg, passphrase),
+                                 "dummy_recipinet"),
+            None)
 
 
-def gateway(messages, recipients):
-    return zip(recipients, messages), None
+def gateway(messages):
+    recipients_with_text = [(m["recipient"], m["text"]) for m in messages]
+    return recipients_with_text, None
 
 
 class Server(object):
@@ -163,12 +167,12 @@ class Client(object):
     def encrypt(self, data, recipients):
         return encrypt(data, recipients, self.GPG)
 
-    def process(self, endpoint, messages, recipients=None):
+    def process(self, endpoint, messages):
         endpoint_type = endpoint["endpoint_type"]
         if endpoint_type == "ONION":
             return peel_onion(messages, self.GPG, self.passphrase)
         if endpoint_type == "GATEWAY":
-            return gateway(messages, recipients)
+            return gateway(messages)
         raise ValueError("Unsupported endpoint type")
 
 

@@ -1,7 +1,8 @@
 import argparse
 
 from panoramix import utils
-from panoramix.client import filter_data_only
+from panoramix.client import filter_data_only, \
+    PROCESSBOX, INBOX, OUTBOX, ACCEPTED
 from panoramix import canonical
 from panoramix.wizard_common import ui, BACKENDS, abort, client,\
     Block, cfg
@@ -121,11 +122,10 @@ def create_ep_close_contribution():
 
 
 def create_ep_process_contribution():
-    peer_id = cfg.get("COMBINED_PEER_ID")
     endpoint_id = cfg.get("EP_COMBINED_ID")
     negotiation_id = cfg.get("CREATE_EP_PROCESS_NEGOTIATION_ID")
-    messages, log = client.inbox_process(
-        endpoint_id, peer_id, upload=True)
+    msg_hashes = cfg.get("CREATE_EP_PROCESSBOX_HASHES")
+    log = client.mk_process_log(msg_hashes, "", wrap=False)
     next_neg = read_next_negotiation_id()
     r = client.record_process(endpoint_id, negotiation_id, log,
                               next_negotiation_id=next_neg)
@@ -247,8 +247,6 @@ def create_process_endpoint():
     data = apply_consensus(negotiation)
     endpoint_id = data["endpoint_id"]
     ui.inform("Processed endpoint %s." % endpoint_id)
-    rs = client.messages_forward(endpoint_id)
-    ui.inform("Forwarded %s messages" % len(rs))
     return endpoint_id
 
 
@@ -375,7 +373,7 @@ def join_ep_close_contribution():
     endpoint = client.endpoint_info(endpoint_id)
     computed_hashes = client.check_endpoint_on_minimum(endpoint)
     if suggested_hashes != computed_hashes:
-        abort("Couldn't agree on message hashes.")
+        abort("Couldn't agree on message hashes when closing.")
     meta = hash_meta_next_negotiation(text["meta"])
     r = client.run_contribution(
         negotiation_id, body, accept=True, extra_meta=meta)
@@ -386,17 +384,20 @@ def join_ep_close_contribution():
 
 
 def join_ep_process_contribution():
-    peer_id = cfg.get("COMBINED_PEER_ID")
     endpoint_id = cfg.get("EP_COMBINED_ID")
     negotiation_id = cfg.get("JOIN_EP_PROCESS_NEGOTIATION_ID")
     initial_contrib = cfg.get("JOIN_EP_PROCESS_COORD_INITIAL_CONTRIBUTION")
     text = get_contribution_text(initial_contrib)
     body = text["body"]
     suggested_hashes = body["data"]["message_hashes"]
-    msgs, log = client.inbox_process(endpoint_id, peer_id, upload=False)
-    computed_hashes = log["message_hashes"]
+
+    r = client.get_input_from_link(
+        endpoint_id, PROCESSBOX, serialized=True, dry_run=True)
+    if r is None:
+        raise ValueError("input is missing")
+    responses, computed_hashes = r
     if suggested_hashes != computed_hashes:
-        abort("Couldn't agree on message hashes.")
+        abort("Couldn't agree on message hashes when processing.")
     meta = hash_meta_next_negotiation(text["meta"])
     r = client.run_contribution(
         negotiation_id, body, accept=True, extra_meta=meta)
@@ -672,7 +673,13 @@ def get_endpoint_id():
 def create_ep_contribution():
     negotiation_id = cfg.get("CREATE_EP_NEGOTIATION_ID")
     peer_id = cfg.get("CREATE_COMBINED_PEER_ID")
+    peer = client.peer_info(peer_id)
+    owners = sorted(unpack_owners(peer["owners"]))
     endpoint_id = get_endpoint_id()
+    link = {"from_endpoint_id":
+            mk_contributing_endpoint_id(owners[-1], endpoint_id),
+            "from_box": OUTBOX,
+            "to_box": PROCESSBOX}
     endpoint_type = on("ENDPOINT_TYPE", get_endpoint_type)
     size_min = on("MIN_SIZE", get_min_size)
     size_max = on("MAX_SIZE", get_max_size)
@@ -686,7 +693,8 @@ def create_ep_contribution():
     next_neg = read_next_negotiation_id()
     is_contrib, d = client.endpoint_create(
         endpoint_id, peer_id, endpoint_type, endpoint_params, size_min,
-        size_max, description, negotiation_id=negotiation_id,
+        size_max, description, links=[link],
+        negotiation_id=negotiation_id,
         next_negotiation_id=next_neg)
     assert is_contrib
     return d["data"]
@@ -758,6 +766,10 @@ def _join_sphinxmix_wizard():
     on("JOIN_EP_CLOSE_FINISHED_NEGOTIATION",
        lambda: finished_negotiation("JOIN_EP_CLOSE_NEGOTIATION_ID"))
 
+    on("OWN_INBOX", get_own_endpoint_input)
+    on("OWN_CLOSE", close_own_endpoint)
+    on("OWN_PROCESS", process_own_endpoint)
+
     on("JOIN_EP_PROCESS_NEGOTIATION_ID", read_next_negotiation_id)
     on("JOIN_EP_PROCESS_COORD_INITIAL_CONTRIBUTION",
        check_ep_process_initial_contribution, register_next_negotiation_id)
@@ -765,9 +777,6 @@ def _join_sphinxmix_wizard():
     on("JOIN_EP_PROCESS_CONTRIBUTION", join_ep_process_contribution)
     on("JOIN_EP_PROCESS_FINISHED_NEGOTIATION",
        lambda: finished_negotiation("JOIN_EP_PROCESS_NEGOTIATION_ID"))
-
-    on("OWN_CLOSE", close_own_endpoint)
-    on("OWN_PROCESS", process_own_endpoint)
 
 
 def join_sphinxmix_wizard():
@@ -868,6 +877,12 @@ def _create_sphinxmix_wizard():
        lambda: finished_negotiation("CREATE_EP_CLOSE_NEGOTIATION_ID"))
     on("CREATE_EP_CLOSE_ID", create_close_endpoint)
 
+    on("OWN_INBOX", get_own_endpoint_input)
+    on("OWN_CLOSE", close_own_endpoint)
+    on("OWN_PROCESS", process_own_endpoint)
+
+    on("CREATE_EP_PROCESSBOX_HASHES", get_common_endpoint_processbox)
+
     on("CREATE_EP_PROCESS_NEGOTIATION_ID", new_negotiation_id_from_stream)
     on("CREATE_EP_PROCESS_CONTRIBUTION", create_ep_process_contribution)
     on("CREATE_EP_PROCESS_SECOND_CONTRIBUTION",
@@ -875,9 +890,6 @@ def _create_sphinxmix_wizard():
     on("CREATE_EP_PROCESS_FINISHED_NEGOTIATION",
        lambda: finished_negotiation("CREATE_EP_PROCESS_NEGOTIATION_ID"))
     on("CREATE_EP_PROCESS_ID", create_process_endpoint)
-
-    on("OWN_CLOSE", close_own_endpoint)
-    on("OWN_PROCESS", process_own_endpoint)
 
 
 def create_sphinxmix_wizard():
@@ -926,14 +938,35 @@ def role_dispatch(role):
         join_mixnet_wizard()
 
 
+def mk_contributing_endpoint_id(peer_id, mixnet_id):
+    return "%s_for_ep_%s" % (peer_id[:7], mixnet_id)
+
+
+def compute_input_from(for_peer_id, owners, combined_endpoint_id):
+    index = owners.index(for_peer_id)
+    if index == 0:
+        return combined_endpoint_id, ACCEPTED
+    previous = mk_contributing_endpoint_id(
+        owners[index - 1], combined_endpoint_id)
+    return previous, OUTBOX
+
+
 def create_individual_endpoint():
     crypto_backend = cfg.get("CRYPTO_BACKEND")
     if crypto_backend != BACKENDS["SPHINXMIX"]:
         return
     peer_id = cfg.get("PEER_ID")
+    combined_peer_id = cfg.get("COMBINED_PEER_ID")
+    combined_peer = client.peer_info(combined_peer_id)
+    owners = sorted(unpack_owners(combined_peer["owners"]))
     combined_endpoint_id = cfg.get("EP_COMBINED_ID")
     combined_endpoint = client.endpoint_info(combined_endpoint_id)
-    endpoint_id = "%s_for_ep_%s" % (peer_id[:7], combined_endpoint_id)
+    endpoint_id = mk_contributing_endpoint_id(peer_id, combined_endpoint_id)
+    from_endpoint, from_box = compute_input_from(
+        peer_id, owners, combined_endpoint_id)
+    link = {"from_endpoint_id": from_endpoint,
+            "from_box": from_box,
+            "to_box": INBOX}
     params = {
         "endpoint_id": endpoint_id,
         "peer_id": peer_id,
@@ -942,10 +975,30 @@ def create_individual_endpoint():
         "size_min": combined_endpoint["size_min"],
         "size_max": combined_endpoint["size_max"],
         "description": "processing endpoint",
+        "links": [link],
     }
     endpoint = client.with_self_consensus(client.endpoint_create, params)
     endpoint_id = endpoint["endpoint_id"]
     ui.inform("Registered endpoint with ENDPOINT_ID: %s" % endpoint_id)
+    return endpoint_id
+
+
+def get_common_endpoint_processbox():
+    endpoint_id = cfg.get("EP_COMBINED_ID")
+    r = client.get_input_from_link(endpoint_id, PROCESSBOX, serialized=True)
+    if r is None:
+        raise Block("Waiting to collect processbox.")
+    ui.inform("Collected input for processbox of %s." % endpoint_id)
+    responses, msg_hashes = r
+    return msg_hashes
+
+
+def get_own_endpoint_input():
+    endpoint_id = cfg.get("PEER_ENDPOINT")
+    r = client.get_input_from_link(endpoint_id, INBOX)
+    if r is None:
+        raise Block("Waiting to collect inbox.")
+    ui.inform("Collected input for inbox of %s." % endpoint_id)
     return endpoint_id
 
 
@@ -973,11 +1026,6 @@ def process_own_endpoint():
     endpoint = client.with_self_consensus(client.endpoint_action, params)
     endpoint_id = endpoint["endpoint_id"]
     ui.inform("Processed endpoint %s" % endpoint_id)
-    rs = client.messages_forward(endpoint_id)
-    log = []
-    for resp_tuple in rs:
-        log.append(" message %s to %s '%s'" % resp_tuple)
-    ui.inform("Forwarded %s messages:\n%s" % (len(rs), "\n".join(log)))
     return endpoint_id
 
 

@@ -127,16 +127,31 @@ def decode_message(message):
     return canonical.from_unicode_canonical(message)
 
 
-def process_booth(inbox_messages):
-    return utils.with_recipient(inbox_messages), None
-
-
 def extract_proof(mixing_output):
     keys = ["challenge",
             "cipher_collections",
             "random_collections",
             "offset_collections"]
     return {key: mixing_output[key] for key in keys}
+
+
+def get_unique_recipient(messages):
+    recipients = set(m["recipient"] for m in messages)
+    if len(recipients) != 1:
+        raise ValueError("non-unique recipient")
+    return recipients.pop()
+
+
+def process_sk_mix(endpoint, messages, params):
+    endpoint_params = canonical.from_unicode_canonical(
+        endpoint["endpoint_params"])
+    election_public = utils.unicode_to_int(
+        endpoint_params["election_public"])
+
+    message_texts = [m["text"] for m in messages]
+    recipient = get_unique_recipient(messages)
+    mixed_messages, proof = mix(message_texts, params, election_public)
+    return utils.with_recipient(mixed_messages, recipient), proof
 
 
 def mix(enc_messages, params, election_public):
@@ -146,7 +161,7 @@ def mix(enc_messages, params, election_public):
     mixed_messages = mixing_output.pop('mixed_ciphers')
     proof = extract_proof(mixing_output)
     encoded_mixed_messages = [encode_message(m) for m in mixed_messages]
-    return utils.with_recipient(encoded_mixed_messages), proof
+    return encoded_mixed_messages, proof
 
 
 def decrypt_one(message, params, secret):
@@ -160,11 +175,25 @@ def decrypt_one(message, params, secret):
     return str(decr), None
 
 
+def process_sk_decrypt(messages, params, secret):
+    message_texts = [m["text"] for m in messages]
+    recipient = get_unique_recipient(messages)
+    decrypted, proof = decrypt(message_texts, params, secret)
+    return utils.with_recipient(decrypted, recipient), proof
+
+
 def decrypt(messages, params, secret):
     cleartexts_with_proofs = [
         decrypt_one(message, params, secret) for message in messages]
     decrypted, proof = utils.unzip(cleartexts_with_proofs)
-    return utils.with_recipient(decrypted), proof
+    return decrypted, proof
+
+
+def process_sk_partial_decrypt(messages, params, secret):
+    message_texts = [m["text"] for m in messages]
+    recipient = get_unique_recipient(messages)
+    decr_messages, proof = partial_decrypt(message_texts, params, secret)
+    return utils.with_recipient(decr_messages, recipient), proof
 
 
 def partial_decrypt(messages, params, secret):
@@ -176,7 +205,14 @@ def partial_decrypt(messages, params, secret):
         modulus, generator, order, secret, ciphers, nr_parallel=0)
     betas = [beta for (_, beta) in ciphers]
     result = zip(factors, betas)
-    return utils.with_recipient([encode_message(result)]), None
+    return [encode_message(result)], None
+
+
+def process_sk_combine(messages, params):
+    message_texts = [m["text"] for m in messages]
+    recipient = get_unique_recipient(messages)
+    combined_messages, proof = combine(message_texts, params)
+    return utils.with_recipient(combined_messages, recipient), proof
 
 
 def combine(messages, params):
@@ -201,7 +237,7 @@ def combine(messages, params):
         results.append(core.decrypt_with_decryptor(
             modulus, generator, order, beta, combined_factor))
         encoded_results = [encode_message(m) for m in results]
-    return utils.with_recipient(encoded_results), None
+    return encoded_results, None
 
 
 class Server(object):
@@ -267,22 +303,19 @@ class Client(object):
         recipient_key = utils.unicode_to_int(self.registry.get_key(key_id))
         return encrypt(data, recipient_key, self.params)
 
-    def process(self, endpoint, messages, recipients=None):
+    def process(self, endpoint, messages):
         endpoint_type = endpoint["endpoint_type"]
         if endpoint_type == "ZEUS_BOOTH":
-            return process_booth(messages)
+            raise utils.NoProcessing(endpoint_type)
         if endpoint_type == "ZEUS_SK_MIX":
-            endpoint_params = canonical.from_unicode_canonical(
-                endpoint["endpoint_params"])
-            election_public = utils.unicode_to_int(
-                endpoint_params["election_public"])
-            return mix(messages, self.params, election_public)
+            return process_sk_mix(endpoint, messages, self.params)
         if endpoint_type == "ZEUS_SK_PARTIAL_DECRYPT":
-            return partial_decrypt(messages, self.params, self.secret)
+            return process_sk_partial_decrypt(
+                messages, self.params, self.secret)
         if endpoint_type == "ZEUS_SK_DECRYPT":
-            return decrypt(messages, self.params, self.secret)
+            return process_sk_decrypt(messages, self.params, self.secret)
         if endpoint_type == "ZEUS_SK_COMBINE":
-            return combine(messages, self.params)
+            return process_sk_combine(messages, self.params)
         raise ValueError("Unsupported endpoint type")
 
 

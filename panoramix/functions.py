@@ -320,7 +320,11 @@ class EndpointView(CreateView, PartialUpdateView):
         if status != models.CycleStatus.OPEN:
             raise ValidationError("unexpected status")
 
+        links = data.pop("links")
         endpoint = models.Endpoint.objects.create(**data)
+        link_entries = [models.EndpointLink(endpoint=endpoint, **kwargs)
+                        for kwargs in links]
+        models.EndpointLink.objects.bulk_create(link_entries)
         endpoint.log_consensus(consensus_id)
         return endpoint
 
@@ -438,6 +442,9 @@ def check_is_owner(endpoint, request_user_id):
 class MessageView(CreateView):
     resource_name = "message"
 
+    def get_queryset(self):
+        return self.queryset.order_by("serial")
+
     def creation_logic(self, request):
         request_data = request.data
         request_user = request.user.peer_id
@@ -452,9 +459,9 @@ class MessageView(CreateView):
 
         if box == models.Box.INBOX:
             check_cycle_is_open(endpoint)
-            if serial is not None:
-                raise ValidationError(
-                    "Serial should be left null at the inbox.")
+            # if serial is not None:
+            #     raise ValidationError(
+            #         "Serial should be left null at the inbox.")
 
         elif box == models.Box.PROCESSBOX:
             check_cycle_can_process(endpoint)
