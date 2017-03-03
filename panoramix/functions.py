@@ -116,12 +116,9 @@ def check_permission(peer_id, owners, signings, request_peer_id):
                 "request user %s is not a peer owner" % request_peer_id)
         expected_signers = owners
     else:
-        if request_peer_id != peer_id:
-            raise PermissionDenied(
-                "request user %s cannot operate on peer %s" %
-                (request_peer_id, peer_id))
-
         expected_signers = [request_peer_id]
+        if request_peer_id != peer_id:
+            expected_signers.append(peer_id)
     assert_consensus_signed(expected_signers, signings)
 
 
@@ -152,10 +149,15 @@ def check_accepted(meta):
         raise ValidationError("not an accepted text")
 
 
-def handle_consensus(expected_body, consensus_id):
+def handle_consensus(expected_body, part, consensus_id):
     consensus = retrieve_consensus(consensus_id)
     signings = consensus["signings"]
     body, meta = get_body_and_meta(consensus)
+    if part is not None:
+        body = canonical.from_unicode_canonical(body)
+        assert isinstance(body, list)
+        body = body[part]
+        body = canonical.to_canonical(body)
 
     check_bodies_equal(expected_body, body)
     check_accepted(meta)
@@ -197,7 +199,15 @@ def require_by_consensus(request):
     consensus_type = by_consensus.get("consensus_type")
     if consensus_type == T_STRUCTURAL:
         consensus_body = get_requested_consensus_body(request_data)
-    return consensus_id, consensus_body
+
+    consensus_part = by_consensus.get("consensus_part")
+    return consensus_id, consensus_body, consensus_part
+
+
+def with_consensus(request):
+    consensus_id, body, part = require_by_consensus(request)
+    signings = handle_consensus(body, part, consensus_id)
+    return consensus_id, signings
 
 
 class PeerView(CreateView):
@@ -210,8 +220,7 @@ class PeerView(CreateView):
         data = request_data.get("data", {})
         info = request_data.get("info", {})
         validate_operation(info, "create", self.resource_name)
-        consensus_id, consensus_body = require_by_consensus(request)
-        signings = handle_consensus(consensus_body, consensus_id)
+        consensus_id, signings = with_consensus(request)
 
         owners = data.get("owners", [])
         owners = [owner["owner_key_id"] for owner in owners]
@@ -303,8 +312,7 @@ class EndpointView(CreateView, PartialUpdateView):
         data = request_data.get("data", {})
         info = request_data.get("info", {})
         validate_operation(info, "create", self.resource_name)
-        consensus_id, consensus_body = require_by_consensus(request)
-        signings = handle_consensus(consensus_body, consensus_id)
+        consensus_id, signings = with_consensus(request)
 
         peer_id = data["peer_id"]
         peer = get_instance(models.Peer, {'peer_id': peer_id}, for_update=True)
@@ -334,7 +342,6 @@ class EndpointView(CreateView, PartialUpdateView):
         data = request_data.get("data", {})
         info = request_data.get("info", {})
         validate_operation(info, "partial_update", self.resource_name)
-        consensus_id, consensus_body = require_by_consensus(request)
 
         on_last_consensus_id = info.get("on_last_consensus_id")
         if on_last_consensus_id is None:
@@ -351,7 +358,7 @@ class EndpointView(CreateView, PartialUpdateView):
             raise PermissionDenied(
                 "condition on consensus_id failed")
 
-        signings = handle_consensus(consensus_body, consensus_id)
+        consensus_id, signings = with_consensus(request)
         peer_id = endpoint.peer_id
         peer = get_instance(models.Peer, {'peer_id': peer_id})
         if peer.status != models.PeerStatus.READY:

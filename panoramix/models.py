@@ -142,6 +142,7 @@ class Endpoint(models.Model):
     endpoint_id = models.CharField(max_length=255, primary_key=True)
     peer_id = models.CharField(max_length=255, db_index=True)
     description = models.CharField(max_length=255)
+    public = models.IntegerField()
     size_min = models.IntegerField()
     size_max = models.IntegerField()
     endpoint_type = models.CharField(

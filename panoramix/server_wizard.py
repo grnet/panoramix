@@ -1,6 +1,6 @@
 import importlib
 
-from panoramix.wizard_common import ui, abort, cfg, config_file
+from panoramix.wizard_common import ui, abort, cfg, config_file, on
 from panoramix import wizard_common as common
 
 
@@ -45,13 +45,12 @@ def main():
     ui.inform("Configuration file is: %s" % config_file)
     ui.inform("Set PANORAMIX_CONFIG environment variable to override")
     on("CATALOG_URL", set_catalog_url)
-    on("CRYPTO_BACKEND", common.select_backend_wizard, server.register_backend)
+    backend = on("CRYPTO_BACKEND", common.select_backend_wizard)
+    server.register_backend(backend)
     on("CRYPTO_PARAMS", lambda: common.crypto_params_wizard_on(server))
     on("INFORM_MIGRATE", inform_migrate)
     inform_launch()
 
-
-on = common.on_meta({})
 
 if __name__ == "__main__":
     main()

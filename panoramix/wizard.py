@@ -1,11 +1,12 @@
 import argparse
+import time
 
 from panoramix import utils
 from panoramix.client import filter_data_only, \
-    PROCESSBOX, INBOX, OUTBOX, ACCEPTED
+    PROCESSBOX, INBOX, OUTBOX, ACCEPTED, NoLinks, InputNotReady
 from panoramix import canonical
 from panoramix.wizard_common import ui, BACKENDS, abort, client,\
-    Block, cfg
+    Block, cfg, retry, on
 from panoramix import wizard_common as common
 
 output_cycle = "/tmp/mixnet_cycle"
@@ -30,10 +31,7 @@ def mk_invitations(num):
 INV_SEP = '|'
 
 
-def print_information():
-    negotiation_id = cfg.get("CREATE_NEGOTIATION_ID")
-    contribution_id = cfg.get("CREATE_CONTRIBUTION_ID")
-    invitations = cfg.get("CREATE_INVITATIONS")
+def print_information(negotiation_id, contribution_id, invitations):
     combined_invitations = [INV_SEP.join([negotiation_id, inv])
                             for inv in invitations]
     ui.inform("Send invitations to peers:\n  %s" %
@@ -88,27 +86,7 @@ def _check_ep_negotiation(negotiation_id, initial_contrib):
     return contribution
 
 
-def check_ep_negotiation_wizard():
-    negotiation_id = cfg.get("CREATE_EP_NEGOTIATION_ID")
-    initial_contrib = cfg.get("CREATE_EP_CONTRIBUTION")
-    return _check_ep_negotiation(negotiation_id, initial_contrib)
-
-
-def check_ep_close_negotiation_wizard():
-    negotiation_id = cfg.get("CREATE_EP_CLOSE_NEGOTIATION_ID")
-    initial_contrib = cfg.get("CREATE_EP_CLOSE_CONTRIBUTION")
-    return _check_ep_negotiation(negotiation_id, initial_contrib)
-
-
-def check_ep_process_negotiation_wizard():
-    negotiation_id = cfg.get("CREATE_EP_PROCESS_NEGOTIATION_ID")
-    initial_contrib = cfg.get("CREATE_EP_PROCESS_CONTRIBUTION")
-    return _check_ep_negotiation(negotiation_id, initial_contrib)
-
-
-def create_ep_close_contribution():
-    endpoint_id = cfg.get("EP_COMBINED_ID")
-    negotiation_id = cfg.get("CREATE_EP_CLOSE_NEGOTIATION_ID")
+def create_ep_close_contribution(endpoint_id, negotiation_id):
     next_neg = read_next_negotiation_id()
     r = client.close_on_minimum(endpoint_id, negotiation_id,
                                 next_negotiation_id=next_neg)
@@ -121,11 +99,12 @@ def create_ep_close_contribution():
     return d["data"]
 
 
-def create_ep_process_contribution():
-    endpoint_id = cfg.get("EP_COMBINED_ID")
-    negotiation_id = cfg.get("CREATE_EP_PROCESS_NEGOTIATION_ID")
-    msg_hashes = cfg.get("CREATE_EP_PROCESSBOX_HASHES")
-    log = client.mk_process_log(msg_hashes, "", wrap=False)
+def do_processing(endpoint_id, peer_id):
+    responses, log = client.inbox_process(endpoint_id, peer_id, upload=True)
+    return log
+
+
+def create_ep_record_contribution(endpoint_id, negotiation_id, log):
     next_neg = read_next_negotiation_id()
     r = client.record_process(endpoint_id, negotiation_id, log,
                               next_negotiation_id=next_neg)
@@ -136,9 +115,133 @@ def create_ep_process_contribution():
     return d["data"]
 
 
-def check_negotiation_wizard():
-    negotiation_id = cfg.get("CREATE_NEGOTIATION_ID")
-    invitations = set(cfg.get("CREATE_INVITATIONS"))
+def apply_endpoint_consensus(endpoint_id, negotiation):
+    data = apply_consensus(negotiation)
+    endpoint_id = data["endpoint_id"]
+    ui.inform("Applied action for endpoint %s." % endpoint_id)
+    return endpoint_id
+
+
+def operate_on_closed_endpoint_coord(endpoint_id):
+    setting = suffixed_setting(endpoint_id)
+    neg_id = on(setting("PROCESS_NEGOTIATION_ID"),
+                new_negotiation_id_from_stream)
+
+    hashes = on(setting("LINKED_PROCESSBOX"),
+       lambda: get_endpoint_input(endpoint_id, PROCESSBOX))
+
+    if hashes is None:
+        peer_id = cfg.get("PEER_ID")
+        log = on(setting("PROCESSING"),
+           lambda: do_processing(endpoint_id, peer_id))
+    else:
+        log = client.mk_process_log(hashes, "", wrap=False)
+
+    contrib = on(setting("PROCESS_CONTRIBUTION"),
+       lambda: create_ep_record_contribution(endpoint_id, neg_id, log))
+    on(setting("PROCESS_SECOND_CONTRIBUTION"),
+       lambda: _check_ep_negotiation(neg_id, contrib))
+    finished_neg = on(setting("PROCESS_FINISHED_NEGOTIATION"),
+       lambda: finished_negotiation(neg_id))
+    on(setting("APPLY_PROCESS"),
+       lambda: apply_endpoint_consensus(endpoint_id, finished_neg))
+
+
+def operate_on_closed_endpoint_contrib(endpoint_id):
+    setting = suffixed_setting(endpoint_id)
+    neg_id = on(setting("PROCESS_NEGOTIATION_ID"), read_next_negotiation_id)
+    contrib = on(setting("PROCESS_COORD_INITIAL_CONTRIBUTION"),
+                 lambda: _check_initial_contribution(neg_id))
+    register_next_negotiation_id(contrib)
+
+    on(setting("PROCESS_CONTRIBUTION"),
+       lambda: join_ep_process_contribution(endpoint_id, neg_id, contrib))
+    on(setting("PROCESS_FINISHED_NEGOTIATION"),
+       lambda: finished_negotiation(neg_id))
+
+
+def operate_own_endpoint(endpoint_id):
+    setting = suffixed_setting(endpoint_id)
+    on(setting("OWN_INBOX"), lambda: get_own_endpoint_input(endpoint_id))
+    on(setting("OWN_CLOSE"), lambda: close_own_endpoint(endpoint_id))
+    on(setting("OWN_PROCESS"), lambda: process_own_endpoint(endpoint_id))
+
+
+def suffixed_setting(endpoint_id):
+    def f(name):
+        return "%s_%s" % (name, endpoint_id)
+    return f
+
+
+def operate_on_open_endpoint_coord(endpoint_id):
+    setting = suffixed_setting(endpoint_id)
+    neg_id = on(setting("CLOSE_NEGOTIATION_ID"),
+                new_negotiation_id_from_stream)
+
+    on(setting("LINKED_INBOX"),
+       lambda: get_endpoint_input(endpoint_id, INBOX))
+
+    contrib = on(setting("CLOSE_CONTRIBUTION"),
+       lambda: create_ep_close_contribution(endpoint_id, neg_id))
+
+    on(setting("CLOSE_SECOND_CONTRIBUTION"),
+       lambda: _check_ep_negotiation(neg_id, contrib))
+
+    finished_neg = on(setting("CLOSE_FINISHED_NEGOTIATION"),
+       lambda: finished_negotiation(neg_id))
+
+    on(setting("CREATE_EP_CLOSE_ID"),
+       lambda: apply_endpoint_consensus(endpoint_id, finished_neg))
+
+
+def operate_on_open_endpoint_contrib(endpoint_id):
+    setting = suffixed_setting(endpoint_id)
+    neg_id = on(setting("CLOSE_NEGOTIATION_ID"), read_next_negotiation_id)
+
+    contrib = on(setting("CLOSE_COORD_INITIAL_CONTRIBUTION"),
+                 lambda: _check_initial_contribution(neg_id))
+    register_next_negotiation_id(contrib)
+
+    on(setting("CLOSE_CONTRIBUTION"),
+       lambda: join_ep_close_contribution(endpoint_id, neg_id, contrib))
+
+    on(setting("CLOSE_FINISHED_NEGOTIATION"),
+       lambda: finished_negotiation(neg_id))
+
+
+OPERATE_DISPATCH = {
+    ("OPEN", "create"): operate_on_open_endpoint_coord,
+    ("OPEN", "join"): operate_on_open_endpoint_contrib,
+    ("CLOSED", "create"): operate_on_closed_endpoint_coord,
+    ("CLOSED", "join"): operate_on_closed_endpoint_contrib,
+}
+
+
+def operate(endpoint_ids, peer_id, combined_peer_id, role):
+    status = []
+    remaining = []
+    for endpoint_id in endpoint_ids:
+        endpoint = client.endpoint_info(endpoint_id)
+        owner = endpoint["peer_id"]
+        if owner == peer_id:
+            try:
+                operate_own_endpoint(endpoint_id)
+            except Block:
+                remaining.append(endpoint_id)
+        elif owner == combined_peer_id:
+            status = endpoint["status"]
+            if status == "PROCESSED":
+                continue
+            remaining.append(endpoint_id)
+            op = OPERATE_DISPATCH.get((status, role))
+            try:
+                op(endpoint_id)
+            except Block:
+                pass
+    return remaining
+
+
+def check_negotiation_wizard(negotiation_id, invitations):
     me = cfg.get("PEER_ID")
     contributions = filter_data_only(client.contribution_list(negotiation_id))
     contributions = [c for c in contributions if c["latest"]]
@@ -197,10 +300,17 @@ def get_negotiation(negotiation_id):
     return client.negotiation_info(negotiation_id)
 
 
-def finished_negotiation(neg_setting):
-    negotiation_id = cfg.get(neg_setting)
+def finished_negotiation(negotiation_id):
     negotiation = get_negotiation(negotiation_id)
     return check_consensus(negotiation)
+
+
+def apply_multipart_consensus(negotiation):
+    consensus = negotiation["consensus"]
+    text = get_negotiation_text(negotiation)
+    ui.inform("Negotiation finished successfully. Applying consensus.")
+    rs = client.apply_multipart_consensus(text["body"], consensus)
+    return filter_data_only(rs)
 
 
 def apply_consensus(negotiation):
@@ -210,8 +320,7 @@ def apply_consensus(negotiation):
     return client.apply_consensus(text["body"], consensus)["data"]
 
 
-def create_combined_peer():
-    negotiation = cfg.get("CREATE_FINISHED_NEGOTIATION")
+def create_combined_peer(negotiation):
     data = apply_consensus(negotiation)
     peer_id = data["peer_id"]
     ui.inform("Created combined peer %s." % peer_id)
@@ -225,33 +334,16 @@ def prepare_output_file():
     ui.inform("Wrote cycle id: %s" % cycle)
 
 
-def create_combined_endpoint():
-    negotiation = cfg.get("CREATE_EP_FINISHED_NEGOTIATION")
-    data = apply_consensus(negotiation)
-    endpoint_id = data["endpoint_id"]
-    prepare_output_file()
-    ui.inform("Created endpoint %s." % endpoint_id)
-    return endpoint_id
+def create_multiple_endpoints(negotiation):
+    data_list = apply_multipart_consensus(negotiation)
+    for data in data_list:
+        endpoint_id = data["endpoint_id"]
+        prepare_output_file()
+        ui.inform("Created endpoint %s." % endpoint_id)
+    return data_list
 
 
-def create_close_endpoint():
-    negotiation = cfg.get("CREATE_EP_CLOSE_FINISHED_NEGOTIATION")
-    data = apply_consensus(negotiation)
-    endpoint_id = data["endpoint_id"]
-    ui.inform("Closed endpoint %s." % endpoint_id)
-    return endpoint_id
-
-
-def create_process_endpoint():
-    negotiation = cfg.get("CREATE_EP_PROCESS_FINISHED_NEGOTIATION")
-    data = apply_consensus(negotiation)
-    endpoint_id = data["endpoint_id"]
-    ui.inform("Processed endpoint %s." % endpoint_id)
-    return endpoint_id
-
-
-def join_combined_peer():
-    negotiation = cfg.get("JOIN_FINISHED_NEGOTIATION")
+def join_combined_peer(negotiation):
     text = get_negotiation_text(negotiation)
     peer_id = text["body"]["data"]["peer_id"]
     peer = client.peer_info(peer_id)
@@ -261,15 +353,18 @@ def join_combined_peer():
     raise Block("Waiting for the combined peer to be created.")
 
 
-def join_combined_endpoint():
-    negotiation = cfg.get("JOIN_EP_FINISHED_NEGOTIATION")
+def join_combined_endpoint(negotiation):
     text = get_negotiation_text(negotiation)
-    endpoint_id = text["body"]["data"]["endpoint_id"]
-    endpoint = client.endpoint_info(endpoint_id)
-    if endpoint is not None:
-        ui.inform("Combined endpoint %s is created." % endpoint_id)
-        return endpoint_id
-    raise Block("Waiting for the Combined endpoint to be created.")
+    endpoints = filter_data_only(text["body"])
+    for endpoint_descr in endpoints:
+        endpoint_id = endpoint_descr["endpoint_id"]
+        endpoint = client.endpoint_info(endpoint_id)
+        if endpoint is not None:
+            ui.inform("Endpoint '%s' is created." % endpoint_id)
+        else:
+            raise Block(
+                "Waiting for endpoint '%s' to be created." % endpoint_id)
+    return endpoints
 
 
 def register_peer_with_owners(combined_peer_id):
@@ -280,8 +375,7 @@ def register_peer_with_owners(combined_peer_id):
         client.peer_import(owner["owner_key_id"])
 
 
-def join_backend_set():
-    contrib = cfg.get("JOIN_COORD_INITIAL_CONTRIBUTION")
+def join_backend_set(contrib):
     text = get_contribution_text(contrib)
     crypto_backend = text["body"]["data"]["crypto_backend"]
     default = "accept"
@@ -298,8 +392,7 @@ def join_backend_set():
         abort()
 
 
-def join_crypto_params_set():
-    contrib = cfg.get("JOIN_COORD_INITIAL_CONTRIBUTION")
+def join_crypto_params_set(contrib):
     text = get_contribution_text(contrib)
     crypto_params = text["body"]["data"]["crypto_params"]
     crypto_params = canonical.from_unicode_canonical(crypto_params)
@@ -346,11 +439,8 @@ def get_join_response():
         abort()
 
 
-def join_contribution():
+def join_contribution(negotiation_id, initial_contrib, invitation_id):
     response = get_join_response()
-    negotiation_id = cfg.get("JOIN_NEGOTIATION_ID")
-    initial_contrib = cfg.get("JOIN_COORD_INITIAL_CONTRIBUTION")
-    invitation_id = cfg.get("JOIN_INVITATION_ID")
     text = get_contribution_text(initial_contrib)
     body = text["body"]
     extra_meta = text["meta"].copy()
@@ -363,14 +453,18 @@ def join_contribution():
     return contribution_id
 
 
-def join_ep_close_contribution():
-    endpoint_id = cfg.get("EP_COMBINED_ID")
-    negotiation_id = cfg.get("JOIN_EP_CLOSE_NEGOTIATION_ID")
-    initial_contrib = cfg.get("JOIN_EP_CLOSE_COORD_INITIAL_CONTRIBUTION")
+def join_ep_close_contribution(endpoint_id, negotiation_id, initial_contrib):
     text = get_contribution_text(initial_contrib)
     body = text["body"]
     suggested_hashes = body["data"]["message_hashes"]
     endpoint = client.endpoint_info(endpoint_id)
+    try:
+        hashes = get_endpoint_input(endpoint_id, INBOX, dry_run=True)
+        if hashes is not None and suggested_hashes != hashes:
+            abort("Hash mismatch for linked inbox")
+    except (InputNotReady, NoLinks) as e:
+        pass
+
     computed_hashes = client.check_endpoint_on_minimum(endpoint)
     if suggested_hashes != computed_hashes:
         abort("Couldn't agree on message hashes when closing.")
@@ -383,10 +477,7 @@ def join_ep_close_contribution():
     return contribution
 
 
-def join_ep_process_contribution():
-    endpoint_id = cfg.get("EP_COMBINED_ID")
-    negotiation_id = cfg.get("JOIN_EP_PROCESS_NEGOTIATION_ID")
-    initial_contrib = cfg.get("JOIN_EP_PROCESS_COORD_INITIAL_CONTRIBUTION")
+def join_ep_process_contribution(endpoint_id, negotiation_id, initial_contrib):
     text = get_contribution_text(initial_contrib)
     body = text["body"]
     suggested_hashes = body["data"]["message_hashes"]
@@ -407,10 +498,8 @@ def join_ep_process_contribution():
     return contribution
 
 
-def join_ep_contribution():
+def join_ep_contribution(negotiation_id, initial_contrib):
     response = get_join_response()
-    negotiation_id = cfg.get("JOIN_EP_NEGOTIATION_ID")
-    initial_contrib = cfg.get("JOIN_EP_COORD_INITIAL_CONTRIBUTION")
     text = get_contribution_text(initial_contrib)
     body = text["body"]
     r = client.run_contribution(negotiation_id, body, accept=False)
@@ -487,20 +576,6 @@ def _join_coord_second_contribution(
     return contrib
 
 
-def join_coord_second_contribution():
-    negotiation_id = cfg.get("JOIN_NEGOTIATION_ID")
-    initial_contrib = cfg.get("JOIN_COORD_INITIAL_CONTRIBUTION")
-    return _join_coord_second_contribution(
-        negotiation_id, initial_contrib)
-
-
-def join_ep_coord_second_contribution():
-    negotiation_id = cfg.get("JOIN_EP_NEGOTIATION_ID")
-    initial_contrib = cfg.get("JOIN_EP_COORD_INITIAL_CONTRIBUTION")
-    return _join_coord_second_contribution(
-        negotiation_id, initial_contrib, for_ep=True)
-
-
 def hash_meta_next_negotiation(meta):
     next_negotiation_id = meta["next_negotiation_id"]
     meta["next_negotiation_id"] = utils.hash_string(next_negotiation_id)
@@ -529,44 +604,12 @@ def _join_second_contribution(negotiation_id, contrib):
     return contribution_id
 
 
-def join_second_contribution():
-    negotiation_id = cfg.get("JOIN_NEGOTIATION_ID")
-    contrib = cfg.get("JOIN_COORD_SECOND_CONTRIBUTION")
-    return _join_second_contribution(negotiation_id, contrib)
-
-
-def join_ep_second_contribution():
-    negotiation_id = cfg.get("JOIN_EP_NEGOTIATION_ID")
-    contrib = cfg.get("JOIN_EP_COORD_SECOND_CONTRIBUTION")
-    return _join_second_contribution(negotiation_id, contrib)
-
-
 def _check_initial_contribution(negotiation_id):
     contributions = get_contributions(negotiation_id)
     contrib = get_first_contribution(contributions)
     if contrib is None:
         raise Block("Waiting for first contribution")
     return contrib
-
-
-def check_initial_contribution():
-    negotiation_id = cfg.get("JOIN_NEGOTIATION_ID")
-    return _check_initial_contribution(negotiation_id)
-
-
-def check_ep_initial_contribution():
-    negotiation_id = cfg.get("JOIN_EP_NEGOTIATION_ID")
-    return _check_initial_contribution(negotiation_id)
-
-
-def check_ep_close_initial_contribution():
-    negotiation_id = cfg.get("JOIN_EP_CLOSE_NEGOTIATION_ID")
-    return _check_initial_contribution(negotiation_id)
-
-
-def check_ep_process_initial_contribution():
-    negotiation_id = cfg.get("JOIN_EP_PROCESS_NEGOTIATION_ID")
-    return _check_initial_contribution(negotiation_id)
 
 
 def get_next_neg_from_contrib(contrib):
@@ -600,15 +643,15 @@ def crypto_params_wizard():
 def key_and_peer_wizard():
     on("KEY", common.set_key_wizard)
     client.register_crypto_client(cfg)
-    on("PEER_NAME", lambda: utils.locale_to_unicode(
+    name = on("PEER_NAME", lambda: utils.locale_to_unicode(
         ui.ask_value("PEER_NAME", "Specify name to register as peer")))
-    on("PEER_ID", do_register_wizard, client.peer_import)
+    peer_id = on("PEER_ID", lambda: do_register_wizard(name))
+    client.peer_import(peer_id)
 
 
-def create_contribution_id():
+def create_contribution_id(negotiation_id):
     name = utils.locale_to_unicode(
         ui.ask_value("name", "Choose mixnet peer name"))
-    negotiation_id = cfg.get("CREATE_NEGOTIATION_ID")
     return create_provisional_peer_contrib(negotiation_id, name)
 
 
@@ -618,8 +661,7 @@ def create_invitations():
     return mk_invitations(num)
 
 
-def do_register_wizard():
-    peer_name = cfg.get("PEER_NAME")
+def do_register_wizard(peer_name):
     peer = client.with_self_consensus(
         client.peer_create, {"name": peer_name})
     peer_id = peer["peer_id"]
@@ -639,200 +681,148 @@ def get_max_size():
     return int(ui.ask_value("MAX_SIZE", "Specify maximum size: "))
 
 
-def get_description():
-    return utils.locale_to_unicode(
-        ui.ask_value("EP_DESCRIPTION", "Give description: "))
-
-
-def get_endpoint_type():
-    types = client.backend.ENDPOINT_TYPES
-    default = types[0]
-    endpoint_type = ui.ask_value(
-        "ENDPOINT_TYPE",
-        "Select endpoint type, one of %s (default: %s)" %
-        (", ".join(types), default))
-    if not endpoint_type:
-        endpoint_type = default
-    return endpoint_type
-
-
 def get_endpoint_name():
     return utils.locale_to_unicode(ui.ask_value(
         "ENDPOINT_NAME", "Specify endpoint name to create on combined peer"))
 
 
-def get_endpoint_id():
+def get_endpoint_id(cycle):
     name = on("ENDPOINT_NAME", get_endpoint_name)
-    cycle = cfg.get("CYCLE", default=1)
     endpoint_id = "%s_%s" % (name, cycle)
-    cfg.set_value("ENDPOINT_ID", endpoint_id)
-    cfg.set_value("CYCLE", cycle + 1)
     return endpoint_id
 
 
-def create_ep_contribution():
-    negotiation_id = cfg.get("CREATE_EP_NEGOTIATION_ID")
-    peer_id = cfg.get("CREATE_COMBINED_PEER_ID")
+def create_ep_contribution(cycle, negotiation_id, peer_id):
     peer = client.peer_info(peer_id)
     owners = sorted(unpack_owners(peer["owners"]))
-    endpoint_id = get_endpoint_id()
-    link = {"from_endpoint_id":
-            mk_contributing_endpoint_id(owners[-1], endpoint_id),
-            "from_box": OUTBOX,
-            "to_box": PROCESSBOX}
-    endpoint_type = on("ENDPOINT_TYPE", get_endpoint_type)
+    endpoint_id = get_endpoint_id(cycle)
     size_min = on("MIN_SIZE", get_min_size)
     size_max = on("MAX_SIZE", get_max_size)
-    description = on("EP_DESCRIPTION", get_description)
-    required_params = client.backend.REQUIRED_PARAMS.get(endpoint_type, [])
-    params = {}
-    for key in required_params:
-        value = ui.ask_value(key, "Specify %s: " % key)
-        params[key] = value
-    endpoint_params = canonical.to_canonical(params)
     next_neg = read_next_negotiation_id()
-    is_contrib, d = client.endpoint_create(
-        endpoint_id, peer_id, endpoint_type, endpoint_params, size_min,
-        size_max, description, links=[link],
-        negotiation_id=negotiation_id,
-        next_negotiation_id=next_neg)
-    assert is_contrib
+
+    attrs = client.backend.make_description(
+        endpoint_id, peer_id, owners, size_min, size_max)
+
+    d = client.endpoints_create_contribution(
+        attrs, negotiation_id, accept=False, next_negotiation_id=next_neg)
     return d["data"]
 
 
-def _inform_send_message(endpoint_id, peer_id):
-    cfg.set_value("EP_COMBINED_ID", endpoint_id)
+def inform_send_message(endpoints):
+    public_endpoint = [e for e in endpoints if e["public"]][0]
+    public_endpoint_id = public_endpoint["endpoint_id"]
+    peer_id = public_endpoint["peer_id"]
     peer_href = client.mk_peer_hyperlink(peer_id)
     ui.inform("Read to accept messages to mixnet %s\n (endpoint '%s')." %
-              (peer_href, endpoint_id))
-
-
-def inform_send_message(endpoint_id):
-    peer_id = cfg.get("CREATE_COMBINED_PEER_ID")
-    return _inform_send_message(endpoint_id, peer_id)
-
-
-def inform_join_send_message(endpoint_id):
-    peer_id = cfg.get("JOIN_COMBINED_PEER_ID")
-    return _inform_send_message(endpoint_id, peer_id)
+              (peer_href, public_endpoint_id))
 
 
 def split_invitation(invitation):
-    [negotiation_id, invitation_id] = invitation.split(INV_SEP)
-    cfg.set_value("JOIN_NEGOTIATION_ID", negotiation_id)
-    cfg.set_value("JOIN_INVITATION_ID", invitation_id)
+    parts = invitation.split(INV_SEP)
+    cfg.set_value("JOIN_NEGOTIATION_ID", parts[0])
+    cfg.set_value("JOIN_INVITATION_ID", parts[1])
+    return parts
 
 
 def join_mixnet_wizard():
-    on("JOIN_INVITATION",
-       lambda: ui.ask_value("JOIN_INVITATION",
-                            "Give invitation to create mix peer"),
-       split_invitation)
-    on("JOIN_COORD_INITIAL_CONTRIBUTION",
-       check_initial_contribution, initial_contribution_info)
-    on("JOIN_CRYPTO_BACKEND", join_backend_set, register_crypto_backend)
-    on("JOIN_CRYPTO_PARAMS",
-       join_crypto_params_set, cfg.copy_to("CRYPTO_PARAMS"))
+    inv = on("JOIN_INVITATION",
+             lambda: ui.ask_value("JOIN_INVITATION",
+                                  "Give invitation to create mix peer"))
+
+    negotiation_id, invitation_id = split_invitation(inv)
+    contrib = on("JOIN_COORD_INITIAL_CONTRIBUTION",
+                 lambda: _check_initial_contribution(negotiation_id))
+    initial_contribution_info(contrib)
+
+    backend = on("JOIN_CRYPTO_BACKEND",
+                 lambda: join_backend_set(contrib))
+    register_crypto_backend(backend)
+
+    crypto_params = on("JOIN_CRYPTO_PARAMS",
+                       lambda: join_crypto_params_set(contrib))
+    on("CRYPTO_PARAMS", lambda: crypto_params)
     key_and_peer_wizard()
-    on("JOIN_CONTRIBUTION_ID", join_contribution)
-    on("JOIN_COORD_SECOND_CONTRIBUTION", join_coord_second_contribution)
-    on("JOIN_SECOND_CONTRIBUTION_ID", join_second_contribution)
-    on("JOIN_FINISHED_NEGOTIATION",
-       lambda: finished_negotiation("JOIN_NEGOTIATION_ID"))
-    on("JOIN_COMBINED_PEER_ID", join_combined_peer, register_peer_with_owners)
+
+    on("JOIN_CONTRIBUTION_ID",
+       lambda: join_contribution(negotiation_id, contrib, invitation_id))
+
+    second_contrib = on(
+        "JOIN_COORD_SECOND_CONTRIBUTION",
+        retry(
+            lambda: _join_coord_second_contribution(negotiation_id, contrib)))
+
+    on("JOIN_SECOND_CONTRIBUTION_ID",
+       lambda: _join_second_contribution(negotiation_id, second_contrib))
+
+    finished_neg = on("JOIN_FINISHED_NEGOTIATION",
+                      retry(lambda: finished_negotiation(negotiation_id)))
+
+    combined_peer_id = on("COMBINED_PEER_ID",
+                          retry(lambda: join_combined_peer(finished_neg)))
+    register_peer_with_owners(combined_peer_id)
 
 
-def join_endpoint_wizard():
-    on("JOIN_EP_NEGOTIATION_ID", read_next_negotiation_id)
-    on("JOIN_EP_COORD_INITIAL_CONTRIBUTION",
-       check_ep_initial_contribution, register_next_negotiation_id)
-    on("JOIN_EP_CONTRIBUTION", join_ep_contribution)
-    on("JOIN_EP_COORD_SECOND_CONTRIBUTION", join_ep_coord_second_contribution)
-    on("JOIN_EP_SECOND_CONTRIBUTION_ID", join_ep_second_contribution)
-    on("JOIN_EP_FINISHED_NEGOTIATION",
-       lambda: finished_negotiation("JOIN_EP_NEGOTIATION_ID"))
+def join_endpoint_wizard(cycle):
+    setting = suffixed_setting(cycle)
+    neg_id = on(setting("EP_NEGOTIATION_ID"), read_next_negotiation_id)
 
-    on("JOIN_EP_COMBINED_ID", join_combined_endpoint, inform_join_send_message)
+    contrib = on(setting("EP_COORD_INITIAL_CONTRIBUTION"),
+                 retry(lambda: _check_initial_contribution(neg_id)))
+    register_next_negotiation_id(contrib)
 
+    on(setting("EP_CONTRIBUTION"),
+       lambda: join_ep_contribution(neg_id, contrib))
 
-def _join_sphinxmix_wizard():
-    join_endpoint_wizard()
-    on("PEER_ENDPOINT", create_individual_endpoint)
-    on("JOIN_EP_CLOSE_NEGOTIATION_ID", read_next_negotiation_id)
-    on("JOIN_EP_CLOSE_COORD_INITIAL_CONTRIBUTION",
-       check_ep_close_initial_contribution, register_next_negotiation_id)
+    second_contrib = on(setting("EP_COORD_SECOND_CONTRIBUTION"),
+                        retry(lambda: _join_coord_second_contribution(
+                            neg_id, contrib, for_ep=True)))
 
-    on("JOIN_EP_CLOSE_CONTRIBUTION", join_ep_close_contribution)
-    on("JOIN_EP_CLOSE_FINISHED_NEGOTIATION",
-       lambda: finished_negotiation("JOIN_EP_CLOSE_NEGOTIATION_ID"))
+    on(setting("EP_SECOND_CONTRIBUTION_ID"),
+       lambda: _join_second_contribution(neg_id, second_contrib))
 
-    on("OWN_INBOX", get_own_endpoint_input)
-    on("OWN_CLOSE", close_own_endpoint)
-    on("OWN_PROCESS", process_own_endpoint)
+    finished_neg = on(setting("EP_FINISHED_NEGOTIATION"),
+                      retry(lambda: finished_negotiation(neg_id)))
 
-    on("JOIN_EP_PROCESS_NEGOTIATION_ID", read_next_negotiation_id)
-    on("JOIN_EP_PROCESS_COORD_INITIAL_CONTRIBUTION",
-       check_ep_process_initial_contribution, register_next_negotiation_id)
-
-    on("JOIN_EP_PROCESS_CONTRIBUTION", join_ep_process_contribution)
-    on("JOIN_EP_PROCESS_FINISHED_NEGOTIATION",
-       lambda: finished_negotiation("JOIN_EP_PROCESS_NEGOTIATION_ID"))
+    endpoints = on(setting("EP_COMBINED_ID"),
+                   retry(lambda: join_combined_endpoint(finished_neg)))
+    inform_send_message(endpoints)
+    return endpoints
 
 
-def join_sphinxmix_wizard():
-    while True:
-        _join_sphinxmix_wizard()
-        join_new_cycle_wizard()
-
-
-def get_join_restart_response():
+def get_restart_response(role):
     if autodefault:
         return "yes"
     default = "yes"
+    verb = role.capitalize()
     response = ui.ask_value(
-        "RESTART", "Join a new cycle? (yes/no) (default: %s): " % default)
+        "RESTART", "%s a new cycle? (yes/no) (default: %s): " %
+        (verb, default))
     if not response:
         return "yes"
     if response != "yes":
         exit()
 
 
-def join_new_cycle_wizard():
-    response = get_join_restart_response()
-    ui.inform("Starting a new cycle...")
-    cycle_settings = [
-        "JOIN_EP_NEGOTIATION_ID", "JOIN_EP_COORD_INITIAL_CONTRIBUTION",
-        "JOIN_EP_CONTRIBUTION", "JOIN_EP_COORD_SECOND_CONTRIBUTION",
-        "JOIN_EP_SECOND_CONTRIBUTION_ID", "JOIN_EP_FINISHED_NEGOTIATION",
-        "JOIN_EP_COMBINED_ID", "PEER_ENDPOINT",
-        "JOIN_EP_CLOSE_NEGOTIATION_ID",
-        "JOIN_EP_CLOSE_COORD_INITIAL_CONTRIBUTION",
-        "JOIN_EP_CLOSE_CONTRIBUTION", "JOIN_EP_CLOSE_FINISHED_NEGOTIATION",
-        "JOIN_EP_PROCESS_NEGOTIATION_ID",
-        "JOIN_EP_PROCESS_COORD_INITIAL_CONTRIBUTION",
-        "JOIN_EP_PROCESS_CONTRIBUTION", "JOIN_EP_PROCESS_FINISHED_NEGOTIATION",
-        "OWN_CLOSE", "OWN_PROCESS",
-    ]
-    for s in cycle_settings:
-        cfg.pop(s)
-
-
 def create_mixnet_wizard():
-    on("CREATE_CRYPTO_BACKEND",
-       common.select_backend_wizard, register_crypto_backend)
-    on("CREATE_CRYPTO_PARAMS",
-       crypto_params_wizard, cfg.copy_to("CRYPTO_PARAMS"))
+    backend = on("CREATE_CRYPTO_BACKEND", common.select_backend_wizard)
+    register_crypto_backend(backend)
+    crypto_params = on("CREATE_CRYPTO_PARAMS", crypto_params_wizard)
+    on("CRYPTO_PARAMS", lambda: crypto_params)
     key_and_peer_wizard()
-    on("CREATE_NEGOTIATION_ID", new_negotiation_id_from_stream)
-    on("CREATE_CONTRIBUTION_ID", create_contribution_id)
-    on("CREATE_INVITATIONS", create_invitations)
-    on("CREATE_INFORM", print_information)
-    on("CREATE_SECOND_CONTRIBUTION_ID", check_negotiation_wizard)
-    on("CREATE_FINISHED_NEGOTIATION",
-       lambda: finished_negotiation("CREATE_NEGOTIATION_ID"))
+    neg_id = on("CREATE_NEGOTIATION_ID", new_negotiation_id_from_stream)
+    contrib = on("CREATE_CONTRIBUTION_ID",
+                 lambda: create_contribution_id(neg_id))
+    invitations = on("CREATE_INVITATIONS", create_invitations)
+    on("CREATE_INFORM",
+       lambda: print_information(neg_id, contrib, invitations))
+    on("CREATE_SECOND_CONTRIBUTION_ID",
+       retry(lambda: check_negotiation_wizard(neg_id, invitations)))
+    finished_neg = on("CREATE_FINISHED_NEGOTIATION",
+                      retry(lambda: finished_negotiation(neg_id)))
 
-    on("CREATE_COMBINED_PEER_ID",
-       create_combined_peer, register_peer_with_owners)
+    combined_peer_id = on("CREATE_COMBINED_PEER_ID",
+       lambda: create_combined_peer(finished_neg))
+    register_peer_with_owners(combined_peer_id)
 
 
 def set_next_negotiation_id(value):
@@ -856,154 +846,55 @@ def new_negotiation_id_from_stream():
     return neg_id
 
 
-def create_endpoint_wizard():
-    on("CREATE_EP_NEGOTIATION_ID", new_negotiation_id_from_stream)
-    on("CREATE_EP_CONTRIBUTION", create_ep_contribution)
-    on("CREATE_EP_SECOND_CONTRIBUTION", check_ep_negotiation_wizard)
-    on("CREATE_EP_FINISHED_NEGOTIATION",
-        lambda: finished_negotiation("CREATE_EP_NEGOTIATION_ID"))
-    on("CREATE_EP_COMBINED_ID", create_combined_endpoint, inform_send_message)
+def create_endpoint_wizard(cycle, combined_peer_id):
+    setting = suffixed_setting(cycle)
+    neg_id = on(setting("EP_NEGOTIATION_ID"), new_negotiation_id_from_stream)
+    contrib = on(setting("EP_CONTRIBUTION"),
+                 lambda: create_ep_contribution(
+                     cycle, neg_id, combined_peer_id))
+
+    on(setting("EP_SECOND_CONTRIBUTION"),
+       retry(lambda: _check_ep_negotiation(neg_id, contrib)))
+
+    finished_neg = on(setting("EP_FINISHED_NEGOTIATION"),
+        retry(lambda: finished_negotiation(neg_id)))
+    endpoints = on(setting("ENDPOINTS"),
+       lambda: create_multiple_endpoints(finished_neg))
+    inform_send_message(endpoints)
+    return endpoints
 
 
-def _create_sphinxmix_wizard():
-    create_endpoint_wizard()
-    on("PEER_ENDPOINT", create_individual_endpoint)
-    on("CREATE_EP_CLOSE_NEGOTIATION_ID", new_negotiation_id_from_stream)
-
-    on("CREATE_EP_CLOSE_CONTRIBUTION", create_ep_close_contribution)
-    on("CREATE_EP_CLOSE_SECOND_CONTRIBUTION",
-       check_ep_close_negotiation_wizard)
-    on("CREATE_EP_CLOSE_FINISHED_NEGOTIATION",
-       lambda: finished_negotiation("CREATE_EP_CLOSE_NEGOTIATION_ID"))
-    on("CREATE_EP_CLOSE_ID", create_close_endpoint)
-
-    on("OWN_INBOX", get_own_endpoint_input)
-    on("OWN_CLOSE", close_own_endpoint)
-    on("OWN_PROCESS", process_own_endpoint)
-
-    on("CREATE_EP_PROCESSBOX_HASHES", get_common_endpoint_processbox)
-
-    on("CREATE_EP_PROCESS_NEGOTIATION_ID", new_negotiation_id_from_stream)
-    on("CREATE_EP_PROCESS_CONTRIBUTION", create_ep_process_contribution)
-    on("CREATE_EP_PROCESS_SECOND_CONTRIBUTION",
-       check_ep_process_negotiation_wizard)
-    on("CREATE_EP_PROCESS_FINISHED_NEGOTIATION",
-       lambda: finished_negotiation("CREATE_EP_PROCESS_NEGOTIATION_ID"))
-    on("CREATE_EP_PROCESS_ID", create_process_endpoint)
-
-
-def create_sphinxmix_wizard():
-    while True:
-        _create_sphinxmix_wizard()
-        create_new_cycle_wizard()
-
-
-def get_create_restart_response():
-    if autodefault:
-        return "yes"
-    default = "yes"
-    response = ui.ask_value(
-        "RESTART", "Create a new cycle? (yes/no) (default: %s): " % default)
-    if not response:
-        return "yes"
-    if response != "yes":
-        exit()
-
-
-def create_new_cycle_wizard():
-    response = get_create_restart_response()
-    ui.inform("Starting a new cycle...")
-    cycle_settings = [
-        "CREATE_EP_NEGOTIATION_ID", "CREATE_EP_CONTRIBUTION",
-        "CREATE_EP_SECOND_CONTRIBUTION", "CREATE_EP_FINISHED_NEGOTIATION",
-        "CREATE_EP_COMBINED_ID", "PEER_ENDPOINT",
-        "CREATE_EP_CLOSE_NEGOTIATION_ID", "CREATE_EP_CLOSE_CONTRIBUTION",
-        "CREATE_EP_CLOSE_SECOND_CONTRIBUTION",
-        "CREATE_EP_CLOSE_FINISHED_NEGOTIATION",
-        "CREATE_EP_CLOSE_ID", "CREATE_EP_PROCESS_NEGOTIATION_ID",
-        "CREATE_EP_PROCESS_CONTRIBUTION",
-        "CREATE_EP_PROCESS_SECOND_CONTRIBUTION",
-        "CREATE_EP_PROCESS_FINISHED_NEGOTIATION",
-        "CREATE_EP_PROCESS_ID",
-        "OWN_CLOSE", "OWN_PROCESS",
-    ]
-    for s in cycle_settings:
-        cfg.pop(s)
-
-
-def role_dispatch(role):
+def mixnet_creation_wizard(role):
     if role == "create":
         create_mixnet_wizard()
     elif role == "join":
         join_mixnet_wizard()
 
 
-def mk_contributing_endpoint_id(peer_id, mixnet_id):
-    return "%s_for_ep_%s" % (peer_id[:7], mixnet_id)
+def get_endpoint_input(endpoint_id, box, dry_run=False):
+    try:
+        responses, msg_hashes = client.get_input_from_link(
+            endpoint_id, box, serialized=True, dry_run=dry_run)
+        if not dry_run:
+            ui.inform("Collected input for %s of '%s'." % (box, endpoint_id))
+        return msg_hashes
+    except InputNotReady:
+        m = "Waiting to collect %s for endpoint '%s'" % (box, endpoint_id)
+        raise Block(m)
+    except NoLinks:
+        return None
 
 
-def compute_input_from(for_peer_id, owners, combined_endpoint_id):
-    index = owners.index(for_peer_id)
-    if index == 0:
-        return combined_endpoint_id, ACCEPTED
-    previous = mk_contributing_endpoint_id(
-        owners[index - 1], combined_endpoint_id)
-    return previous, OUTBOX
-
-
-def create_individual_endpoint():
-    crypto_backend = cfg.get("CRYPTO_BACKEND")
-    if crypto_backend != BACKENDS["SPHINXMIX"]:
-        return
-    peer_id = cfg.get("PEER_ID")
-    combined_peer_id = cfg.get("COMBINED_PEER_ID")
-    combined_peer = client.peer_info(combined_peer_id)
-    owners = sorted(unpack_owners(combined_peer["owners"]))
-    combined_endpoint_id = cfg.get("EP_COMBINED_ID")
-    combined_endpoint = client.endpoint_info(combined_endpoint_id)
-    endpoint_id = mk_contributing_endpoint_id(peer_id, combined_endpoint_id)
-    from_endpoint, from_box = compute_input_from(
-        peer_id, owners, combined_endpoint_id)
-    link = {"from_endpoint_id": from_endpoint,
-            "from_box": from_box,
-            "to_box": INBOX}
-    params = {
-        "endpoint_id": endpoint_id,
-        "peer_id": peer_id,
-        "endpoint_type": "SPHINXMIX",
-        "endpoint_params": canonical.to_canonical({}),
-        "size_min": combined_endpoint["size_min"],
-        "size_max": combined_endpoint["size_max"],
-        "description": "processing endpoint",
-        "links": [link],
-    }
-    endpoint = client.with_self_consensus(client.endpoint_create, params)
-    endpoint_id = endpoint["endpoint_id"]
-    ui.inform("Registered endpoint with ENDPOINT_ID: %s" % endpoint_id)
-    return endpoint_id
-
-
-def get_common_endpoint_processbox():
-    endpoint_id = cfg.get("EP_COMBINED_ID")
-    r = client.get_input_from_link(endpoint_id, PROCESSBOX, serialized=True)
-    if r is None:
-        raise Block("Waiting to collect processbox.")
-    ui.inform("Collected input for processbox of %s." % endpoint_id)
-    responses, msg_hashes = r
-    return msg_hashes
-
-
-def get_own_endpoint_input():
-    endpoint_id = cfg.get("PEER_ENDPOINT")
-    r = client.get_input_from_link(endpoint_id, INBOX)
-    if r is None:
+def get_own_endpoint_input(endpoint_id):
+    try:
+        r = client.get_input_from_link(endpoint_id, INBOX)
+        ui.inform("Collected input for inbox of %s." % endpoint_id)
+    except InputNotReady:
         raise Block("Waiting to collect inbox.")
-    ui.inform("Collected input for inbox of %s." % endpoint_id)
     return endpoint_id
 
 
-def close_own_endpoint():
-    endpoint_id = cfg.get("PEER_ENDPOINT")
+def close_own_endpoint(endpoint_id):
     params = client.close_on_minimum_prepare(endpoint_id)
     if params == "wrongstatus":
         abort("Wrong status")
@@ -1015,9 +906,8 @@ def close_own_endpoint():
     return endpoint_id
 
 
-def process_own_endpoint():
+def process_own_endpoint(endpoint_id):
     peer_id = cfg.get("PEER_ID")
-    endpoint_id = cfg.get("PEER_ENDPOINT")
     messages, log = client.inbox_process(
         endpoint_id, peer_id, upload=True)
     params = client.record_process_prepare(endpoint_id, log)
@@ -1029,41 +919,27 @@ def process_own_endpoint():
     return endpoint_id
 
 
-def create_zeus_wizard():
-    return create_endpoint_wizard()
+def handle_endpoints_wizard(role):
+    while True:
+        cycle = on("CYCLE", lambda: 1)
 
+        peer_id = cfg.get("PEER_ID")
+        combined_peer_id = cfg.get("COMBINED_PEER_ID")
 
-def join_zeus_wizard():
-    return join_endpoint_wizard()
+        if role == "create":
+            endpoints = create_endpoint_wizard(cycle, combined_peer_id)
+        elif role == "join":
+            endpoints = join_endpoint_wizard(cycle)
 
-
-def sphinxmix_role_dispatch():
-    role = cfg.get("SETUP_ROLE")
-    if role == "create":
-        return create_sphinxmix_wizard()
-    if role == "join":
-        return join_sphinxmix_wizard()
-
-
-def zeus_role_dispatch():
-    role = cfg.get("SETUP_ROLE")
-    if role == "create":
-        return create_zeus_wizard()
-    if role == "join":
-        return join_zeus_wizard()
-
-
-BACKEND_WIZARDS = {
-    BACKENDS["SPHINXMIX"]: sphinxmix_role_dispatch,
-    BACKENDS["ZEUS"]: zeus_role_dispatch,
-}
-
-
-def backend_specific_wizard():
-    crypto_backend = cfg.get("CRYPTO_BACKEND")
-    wiz = BACKEND_WIZARDS.get(crypto_backend)
-    if wiz is not None:
-        return wiz()
+        endpoint_ids = [e["endpoint_id"] for e in endpoints]
+        remaining = endpoint_ids
+        while remaining:
+            ui.inform("Still need to handle endpoints %s." % remaining)
+            remaining = operate(remaining, peer_id, combined_peer_id, role)
+            time.sleep(3)
+        get_restart_response(role)
+        ui.inform("Starting a new cycle...")
+        cfg.set_value("CYCLE", cycle + 1)
 
 
 def set_catalog_url_wizard():
@@ -1087,37 +963,13 @@ def main():
     ui.inform("Welcome to Panoramix wizard!")
     ui.inform("Configuration file is: %s" % common.config_file)
     ui.inform("Set PANORAMIX_CONFIG environment variable to override")
-    on("CATALOG_URL",
-       set_catalog_url_wizard,
-       client.register_catalog_url)
-    on("SETUP_ROLE",
-       lambda: ui.ask_value("role", "Choose 'create' or 'join' mixnet"),
-       role_dispatch)
-    backend_specific_wizard()
+    catalog_url = on("CATALOG_URL", set_catalog_url_wizard)
+    client.register_catalog_url(catalog_url)
+    role = on("SETUP_ROLE",
+              lambda: ui.ask_value("role", "Choose 'create' or 'join' mixnet"))
+    mixnet_creation_wizard(role)
+    handle_endpoints_wizard(role)
 
-
-def show_contrib(contrib):
-    return contrib["id"]
-
-
-def show_consensus(neg):
-    return neg["consensus"]
-
-DISPLAY = {
-    "CREATE_FINISHED_NEGOTIATION": show_consensus,
-    "CREATE_EP_CONTRIBUTION": show_contrib,
-    "CREATE_EP_SECOND_CONTRIBUTION": show_contrib,
-    "JOIN_FINISHED_NEGOTIATION": show_consensus,
-    "JOIN_COORD_INITIAL_CONTRIBUTION": show_contrib,
-    "JOIN_COORD_SECOND_CONTRIBUTION": show_contrib,
-    "JOIN_EP_COORD_INITIAL_CONTRIBUTION": show_contrib,
-    "JOIN_EP_CONTRIBUTION": show_contrib,
-    "JOIN_EP_COORD_SECOND_CONTRIBUTION": show_contrib,
-    "CREATE_EP_FINISHED_NEGOTIATION": show_consensus,
-    "JOIN_EP_FINISHED_NEGOTIATION": show_consensus,
-}
-
-on = common.on_meta(DISPLAY)
 
 if __name__ == "__main__":
     main()

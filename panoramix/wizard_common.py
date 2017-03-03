@@ -38,27 +38,26 @@ class Block(BaseException):
 
 
 def retry(action):
-    message = None
-    while True:
-        try:
-            return action()
-        except Block as e:
-            if e.message != message:
-                message = e.message
-                ui.inform(message)
-            time.sleep(INTERVAL)
+    def inner():
+        message = None
+        while True:
+            try:
+                return action()
+            except Block as e:
+                if e.message != message:
+                    message = e.message
+                    ui.inform(message)
+                time.sleep(INTERVAL)
+    return inner
 
 
-def on_meta(display):
-    def f(setting, action, postaction=None):
-        value = cfg.get(setting)
-        if value is None:
-            value = retry(action)
-            cfg.set_value(setting, value)
-        if postaction is not None:
-            postaction(value)
-        return value
-    return f
+def on(setting, action):
+    print "ON %s" % setting
+    value = cfg.get(setting)
+    if value is None:
+        value = action()
+        cfg.set_value(setting, value)
+    return value
 
 
 def select_backend_wizard():

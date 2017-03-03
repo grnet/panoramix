@@ -15,6 +15,61 @@ ENDPOINT_TYPES = [
     "SPHINXMIX",
 ]
 
+
+def mk_contributing_endpoint_id(peer_id, mixnet_id):
+    return "%s_for_ep_%s" % (peer_id[:7], mixnet_id)
+
+
+def compute_input_from(for_peer_id, owners, combined_endpoint_id):
+    index = owners.index(for_peer_id)
+    if index == 0:
+        return combined_endpoint_id, "ACCEPTED"
+    previous = mk_contributing_endpoint_id(
+        owners[index - 1], combined_endpoint_id)
+    return previous, "OUTBOX"
+
+
+def make_description(mixnet_name, combined_peer_id, owners,
+                     size_min, size_max):
+    owners = sorted(owners)
+    link = {"from_endpoint_id":
+            mk_contributing_endpoint_id(owners[-1], mixnet_name),
+            "from_box": "OUTBOX",
+            "to_box": "PROCESSBOX"}
+    endpoint_params = canonical.to_canonical({})
+    gateway = {
+        "endpoint_id": mixnet_name,
+        "peer_id": combined_peer_id,
+        "endpoint_type": "SPHINXMIX_GATEWAY",
+        "endpoint_params": endpoint_params,
+        "description": "Gateway for mixnet '%s'" % mixnet_name,
+        "public": True,
+        "links": [link],
+        "size_min": size_min,
+        "size_max": size_max,
+    }
+    endpoints = [gateway]
+    for peer_id in owners:
+        endpoint_id = mk_contributing_endpoint_id(peer_id, mixnet_name)
+        from_endpoint, from_box = compute_input_from(
+            peer_id, owners, mixnet_name)
+        link = {"from_endpoint_id": from_endpoint,
+                "from_box": from_box,
+                "to_box": "INBOX"}
+        endpoints.append({
+            "endpoint_id": endpoint_id,
+            "peer_id": peer_id,
+            "endpoint_type": "SPHINXMIX",
+            "endpoint_params": endpoint_params,
+            "description": "Mixing node for '%s'" % mixnet_name,
+            "public": False,
+            "links": [link],
+            "size_min": size_min,
+            "size_max": size_max,
+        })
+    return endpoints
+
+
 REQUIRED_PARAMS = {}
 
 

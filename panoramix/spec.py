@@ -131,6 +131,14 @@ def BY_CONSENSUS():
                 ".string": {},
                 ".required": {},
                 ".writeonly": {},
+            },
+            "consensus_part": {
+                ".field": {},
+                ".drf_field": {"onmodel": False},
+                ".cli_option": {},
+                ".integer": {},
+                ".nullable": {},
+                ".writeonly": {},
             }
         }
     }
@@ -274,6 +282,7 @@ ENDPOINTS = {
                     "to_box": astring(),
                     "from_box": astring(),
                     "from_endpoint_id": astring()}}),  # .initwrite: {}
+            "public": aninteger({".required": {}}),
             "status": astring({".required": {}}),
             "process_proof": astring(),
             "message_hashes": {

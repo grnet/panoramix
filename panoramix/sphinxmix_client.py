@@ -1,4 +1,4 @@
-from panoramix.wizard_common import abort, client, ui, cfg
+from panoramix.wizard_common import abort, client, ui, cfg, on
 from panoramix import wizard_common as common
 import canonical
 
@@ -70,16 +70,14 @@ def main(text=None, recipient=None):
     ui.inform("Welcome to Panoramix sphinxmix client!")
     ui.inform("Configuration file is: %s" % common.config_file)
     ui.inform("Set PANORAMIX_CONFIG environment variable to override")
-    on("MIXNET_URL",
-       lambda: ui.ask_value("MIXNET_URL", "Give sphinxmix mixnet URL"),
-       mixnet_url_process)
-    on("KEY",
-       common.set_key_wizard, lambda _: client.register_crypto_client(cfg))
+    url = on("MIXNET_URL",
+       lambda: ui.ask_value("MIXNET_URL", "Give sphinxmix mixnet URL"))
+    mixnet_url_process(url)
+    on("KEY", common.set_key_wizard)
+    client.register_crypto_client(cfg)
     register_peer_and_owners()
     send_message(text=text, recipient=recipient)
 
-
-on = common.on_meta({})
 
 if __name__ == "__main__":
     main()

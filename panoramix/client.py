@@ -34,10 +34,11 @@ def mk_info(resource, operation, ident=None):
 T_STRUCTURAL = "structural"
 
 
-def mk_by_consensus(consensus_id):
+def mk_by_consensus(consensus_id, part=None):
     return {
         "consensus_id": consensus_id,
         "consensus_type": T_STRUCTURAL,
+        "consensus_part": part,
     }
 
 
@@ -82,6 +83,15 @@ def mk_panoramix_client(cfg):
     client.register_backend(get_setting_or_fail(cfg, "CRYPTO_BACKEND"))
     client.register_crypto_client(cfg)
     return client
+
+
+class InputNotReady(Exception):
+    pass
+
+
+class NoLinks(Exception):
+    pass
+
 
 
 class PanoramixClient(object):
@@ -199,10 +209,17 @@ class PanoramixClient(object):
                   "endpoint": clients.endpoints}
         return getattr(CLIENT[resource], operation)
 
-    def apply_consensus(self, body, consensus_id):
+    def apply_multipart_consensus(self, body, consensus_id):
+        responses = []
+        for part, parted_body in enumerate(body):
+            responses.append(
+                self.apply_consensus(parted_body, consensus_id, part))
+        return responses
+
+    def apply_consensus(self, body, consensus_id, part=None):
         info = body["info"]
         callpoint = self.get_callpoint(info["resource"], info["operation"])
-        body["by_consensus"] = mk_by_consensus(consensus_id)
+        body["by_consensus"] = mk_by_consensus(consensus_id, part)
         resource_id = info.get("id")
         request = self.mk_signed_request(body)
         kwargs = {"data": request}
@@ -276,6 +293,24 @@ class PanoramixClient(object):
         public_key = d["key_data"]
         self.crypto_client.register_key(public_key)
         return public_key
+
+    def endpoints_create_contribution(
+            self, descriptions, negotiation_id, accept=False,
+            next_negotiation_id=None):
+        body = []
+        for description in descriptions:
+            info = mk_info("endpoint", "create")
+            data = dict(description)
+            data["status"] = "OPEN"
+            attrs = {
+                "info": info,
+                "data": data,
+            }
+            body.append(attrs)
+
+        extra_meta = self.next_negotiation_meta(next_negotiation_id)
+        r = self.run_contribution(negotiation_id, body, accept, extra_meta)
+        return r.json()
 
     def endpoint_create(
             self, endpoint_id, peer_id, endpoint_type, endpoint_params,
@@ -546,16 +581,19 @@ class PanoramixClient(object):
             from_box = link["from_box"]
             required_status = STATUS_FOR_BOX[from_box]
             if required_status != from_endpoint["status"]:
-                return False
-        return True
+                raise InputNotReady()
+
+    def get_links_for_box(self, endpoint, to_box):
+        return  [link for link in endpoint["links"]
+                 if link["to_box"] == to_box]
 
     def get_input_from_link(
             self, endpoint_id, to_box, serialized=False, dry_run=False):
         endpoint = self.endpoint_info(endpoint_id)
-        links = [link for link in endpoint["links"]
-                 if link["to_box"] == to_box]
-        if not self.check_input_is_ready(links):
-            return None
+        links = self.get_links_for_box(endpoint, to_box)
+        if not links:
+            raise NoLinks()
+        self.check_input_is_ready(links)
 
         serial = 0 if serialized else None
         responses = []
