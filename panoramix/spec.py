@@ -171,9 +171,9 @@ NEGOTIATIONS = {
     ".drf_collection": DRF("panoramix.models.Negotiation",
                            {"mixins": ["panoramix.functions.NegotiationView"],
                             "filter_fields": ["consensus"]}),
-    "actions": {".create": {},
-                ".retrieve": {},
-                ".list": {}},
+    ".actions": {".create": {},
+                 ".retrieve": {},
+                 ".list": {}},
     "*": {
         "data": namespaced({
             "id": readonlystring(),
@@ -201,12 +201,12 @@ CONTRIBUTIONS = {
     ".drf_collection": DRF("panoramix.models.Contribution",
                            {"mixins": ["panoramix.functions.ContributionView"],
                             "filter_fields": ["negotiation", "id"]}),
-    "actions": {".create": {},
-                ".retrieve": {},
-                ".list": {}},
+    ".actions": {".create": {},
+                 ".retrieve": {},
+                 ".list": {}},
     "*": {
         "data": namespaced({
-            "negotiation": afield({".ref": {"to": "negotiations"},
+            "negotiation": afield({".ref": {"to": "panoramix/negotiations"},
                                    ".writeonly": {}}),
             "id": afield({".serial": {}, ".readonly": {}}),
             "text": astring(),
@@ -235,9 +235,9 @@ PEERS = {
     ".collection": {},
     ".drf_collection": DRF("panoramix.models.Peer",
                            {"mixins": ["panoramix.functions.PeerView"]}),
-    "actions": {".list": {},
-                ".create": {},
-                ".retrieve": {}},
+    ".actions": {".list": {},
+                 ".create": {},
+                 ".retrieve": {}},
     "*": {
         "data": namespaced({
             "peer_id": astring(),  # .initwrite: {}
@@ -264,10 +264,10 @@ ENDPOINTS = {
     ".drf_collection": DRF("panoramix.models.Endpoint",
                            {"mixins": ["panoramix.functions.EndpointView"],
                             "filter_fields": ["peer_id", "status"]}),
-    "actions": {".create": {},
-                ".list": {},
-                ".update": {},
-                ".retrieve": {}},
+    ".actions": {".create": {},
+                 ".list": {},
+                 ".update": {},
+                 ".retrieve": {}},
     "*": {
         "data": namespaced({
             "endpoint_id": astring(),  # .initwrite: {}
@@ -316,8 +316,8 @@ MESSAGES = {
     ".drf_collection": DRF("panoramix.models.Message",
                            {"mixins": ["panoramix.functions.MessageView"],
                             "filter_fields": ["endpoint_id", "box"]}),
-    "actions": {".create": {},
-                ".list": {}},
+    ".actions": {".create": {},
+                 ".list": {}},
     "*": {
         "data": namespaced({
             "id": afield({".serial": {},
@@ -337,8 +337,8 @@ MESSAGES = {
 }
 
 SPEC = {
-    ".endpoint": {},
     "panoramix": {
+        ".endpoint": {},
         "negotiations": NEGOTIATIONS,
         "contributions": CONTRIBUTIONS,
         "peers": PEERS,

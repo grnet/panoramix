@@ -1,8 +1,8 @@
 from collections import namedtuple
 import importlib
 
-from apimas.modeling.clients import ApimasClientAdapter
-from apimas.modeling.core.exceptions import ApimasClientException
+from apimas.clients.adapter import ApimasClientAdapter
+from apimas.exceptions import ApimasClientException
 
 from panoramix.spec import SPEC
 from panoramix import canonical
@@ -17,8 +17,9 @@ ClientTuple = namedtuple(
 def mk_clients(catalog_url):
     client_gen = ApimasClientAdapter(catalog_url)
     client_gen.construct(SPEC)
-    client_gen.apply()
-    return ClientTuple(**client_gen.get_clients())
+    clients = client_gen.get_clients()
+    clients = dict((k.split('/')[-1], v) for (k, v) in clients.items())
+    return ClientTuple(**clients)
 
 
 def mk_info(resource, operation, ident=None):

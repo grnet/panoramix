@@ -1,3 +1,3 @@
-apimas==0.2
+apimas==0.3
 django-choices
 cliff
