@@ -375,7 +375,6 @@ MESSAGES = {
         }),
         "info": INFO(),
         "meta": META(),
-        "by_consensus": BY_CONSENSUS(),
     }
 }
 
