@@ -22,6 +22,16 @@ def astring(d=None):
     return afield(specs)
 
 
+def atext(d=None):
+    if d is None:
+        d = {}
+    specs = {
+        ".text": {},
+    }
+    specs.update(d)
+    return afield(specs)
+
+
 def aninteger(d=None):
     if d is None:
         d = {}
@@ -48,6 +58,17 @@ def readonlystring(d=None):
     specs = {
         ".readonly": {},
         ".string": {},
+    }
+    specs.update(d)
+    return afield(specs)
+
+
+def readonlytext(d=None):
+    if d is None:
+        d = {}
+    specs = {
+        ".readonly": {},
+        ".text": {},
     }
     specs.update(d)
     return afield(specs)
@@ -217,7 +238,7 @@ NEGOTIATIONS = {
     "*": {
         "data": namespaced({
             "id": readonlystring(),
-            "text": readonlystring(),
+            "text": readonlytext(),
             "status": achoice(NegotiationStatus, {".readonly": {}}),
             "timestamp": afield({".datetime": {},
                                  ".readonly": {}}),
@@ -226,7 +247,7 @@ NEGOTIATIONS = {
                 ".readonly": {},
                 ".structarray": {
                     "signer_key_id": readonlystring(),
-                    "signature": readonlystring(),
+                    "signature": readonlytext(),
                 }
             }),
         }),
@@ -249,10 +270,10 @@ CONTRIBUTIONS = {
             "negotiation": afield({".ref": {"to": "panoramix/negotiations"},
                                    ".writeonly": {}}),
             "id": afield({".serial": {}, ".readonly": {}}),
-            "text": astring(),
+            "text": atext(),
             "latest": afield({".boolean": {}, "readonly": {}}),
             "signer_key_id": astring(),
-            "signature": astring(),
+            "signature": atext(),
         }),
         "info": INFO(),
         "meta": META(),
@@ -285,8 +306,8 @@ PEERS = {
             "name": astring(),  # .initwrite: {}
             "key_type": aninteger(),  # .initwrite: {}
             "crypto_backend": astring({".blankable": {}}),  # .initwrite: {}
-            "crypto_params": astring({".blankable": {}}),  # .initwrite: {}
-            "key_data": astring(),  # .initwrite: {}
+            "crypto_params": atext({".blankable": {}}),  # .initwrite: {}
+            "key_data": atext(),  # .initwrite: {}
             "owners": afield({
                 ".structarray": {
                     "owner_key_id": astring()}}),  # .initwrite: {}
@@ -318,7 +339,7 @@ ENDPOINTS = {
             "size_min": aninteger(),  # .initwrite: {}
             "size_max": aninteger(),  # .initwrite: {}
             "endpoint_type": astring(),  # .initwrite: {}
-            "endpoint_params": astring(),  # .initwrite: {}
+            "endpoint_params": atext(),  # .initwrite: {}
             "links": afield({
                 ".structarray": {
                     "to_box": achoice(Box),
@@ -326,7 +347,7 @@ ENDPOINTS = {
                     "from_endpoint_id": astring()}}),  # .initwrite: {}
             "public": aninteger({".required": {}}),
             "status": achoice(EndpointStatus, {".required": {}}),
-            "process_proof": astring(),
+            "process_proof": atext(),
             "message_hashes": {
                 ".cli_option": {},
                 ".field": {},
@@ -369,7 +390,7 @@ MESSAGES = {
             "endpoint_id": astring({".required": {}}),
             "sender": astring({".required": {}}),
             "recipient": astring({".required": {}}),
-            "text": astring({".required": {}}),
+            "text": atext({".required": {}}),
             "box": achoice(Box, {".required": {}}),
             "message_hash": astring({".readonly": {}}),
         }),
