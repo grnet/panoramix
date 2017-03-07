@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
+from panoramix import spec
 from panoramix import models
 from panoramix import canonical
 from panoramix import utils
@@ -27,7 +28,7 @@ def get_instance(model, filters, for_update=False):
 
 
 def contribute_to_negotiation(negotiation, request=None, key_data=None):
-    if negotiation.status != models.NegotiationStatus.OPEN:
+    if negotiation.status != spec.NegotiationStatus.OPEN:
         raise ValidationError("neg is not open")
     text = request["text"]
     signature = request["signature"]
@@ -91,7 +92,7 @@ def _close_negotiation(negotiation, contributions):
     consensus = utils.hash_string(canonical.to_canonical(hashable))
     negotiation.timestamp = now
     negotiation.consensus = consensus
-    negotiation.status = models.NegotiationStatus.DONE
+    negotiation.status = spec.NegotiationStatus.DONE
     negotiation.save()
 
 
@@ -226,7 +227,7 @@ class PeerView(CreateView):
         owners = [owner["owner_key_id"] for owner in owners]
         peer_id = data["peer_id"]
         status = data.get("status")
-        if status != models.PeerStatus.READY:
+        if status != spec.PeerStatus.READY:
             raise ValidationError("unexpected status")
 
         check_permission(peer_id, owners, signings, request_user)
@@ -316,7 +317,7 @@ class EndpointView(CreateView, PartialUpdateView):
 
         peer_id = data["peer_id"]
         peer = get_instance(models.Peer, {'peer_id': peer_id}, for_update=True)
-        if peer.status != models.PeerStatus.READY:
+        if peer.status != spec.PeerStatus.READY:
             raise PermissionDenied("peer is not in state READY")
         owners = peer.list_owners()
         check_permission(peer_id, owners, signings, request_user)
@@ -325,7 +326,7 @@ class EndpointView(CreateView, PartialUpdateView):
 
     def perform_create(self, data, consensus_id):
         status = data.get("status")
-        if status != models.CycleStatus.OPEN:
+        if status != spec.EndpointStatus.OPEN:
             raise ValidationError("unexpected status")
 
         links = data.pop("links")
@@ -361,7 +362,7 @@ class EndpointView(CreateView, PartialUpdateView):
         consensus_id, signings = with_consensus(request)
         peer_id = endpoint.peer_id
         peer = get_instance(models.Peer, {'peer_id': peer_id})
-        if peer.status != models.PeerStatus.READY:
+        if peer.status != spec.PeerStatus.READY:
             raise PermissionDenied("peer is not in state READY")
         owners = peer.list_owners()
         check_permission(peer_id, owners, signings, request_user)
@@ -371,9 +372,9 @@ class EndpointView(CreateView, PartialUpdateView):
 
 def apply_transition(endpoint, data, consensus_id):
     requested_status = data.get("status")
-    if requested_status == models.CycleStatus.CLOSED:
+    if requested_status == spec.EndpointStatus.CLOSED:
         close_endpoint(endpoint, data)
-    elif requested_status == models.CycleStatus.PROCESSED:
+    elif requested_status == spec.EndpointStatus.PROCESSED:
         record_endpoint_process(endpoint, data)
     else:
         raise ValidationError("invalid status")
@@ -391,7 +392,7 @@ def compute_messages_hash(msg_hashes):
 def close_endpoint(endpoint, data):
     current_status = endpoint.status
     if current_status not in [
-            models.CycleStatus.OPEN, models.CycleStatus.FULL]:
+            spec.EndpointStatus.OPEN, spec.EndpointStatus.FULL]:
         raise PermissionDenied("wrong current state")
 
     message_hashes = data.get("message_hashes", [])
@@ -400,7 +401,7 @@ def close_endpoint(endpoint, data):
     selected_inbox_messages = models.Message.objects.filter(
         message_hash__in=message_hashes,
         endpoint_id=endpoint.endpoint_id,
-        box=models.Box.INBOX)
+        box=spec.Box.INBOX)
 
     inbox_count = selected_inbox_messages.count()
     if message_hashes_count != inbox_count:
@@ -412,9 +413,9 @@ def close_endpoint(endpoint, data):
 
     inbox_hash = compute_messages_hash(message_hashes)
     endpoint.inbox_hash = inbox_hash
-    endpoint.status = models.CycleStatus.CLOSED
+    endpoint.status = spec.EndpointStatus.CLOSED
     endpoint.save()
-    selected_inbox_messages.update(box=models.Box.ACCEPTED)
+    selected_inbox_messages.update(box=spec.Box.ACCEPTED)
 
 
 def record_endpoint_process(endpoint, data):
@@ -425,7 +426,7 @@ def record_endpoint_process(endpoint, data):
     processed_messages = models.Message.objects.filter(
         message_hash__in=message_hashes,
         endpoint_id=endpoint.endpoint_id,
-        box=models.Box.PROCESSBOX)
+        box=spec.Box.PROCESSBOX)
     count = processed_messages.count()
     if message_hashes_count != count:
         raise PermissionDenied("message count mismatch")
@@ -433,9 +434,9 @@ def record_endpoint_process(endpoint, data):
     outbox_hash = compute_messages_hash(message_hashes)
     endpoint.process_proof = process_proof
     endpoint.outbox_hash = outbox_hash
-    endpoint.status = models.CycleStatus.PROCESSED
+    endpoint.status = spec.EndpointStatus.PROCESSED
     endpoint.save()
-    processed_messages.update(box=models.Box.OUTBOX)
+    processed_messages.update(box=spec.Box.OUTBOX)
 
 
 def check_is_owner(endpoint, request_user_id):
@@ -464,13 +465,13 @@ class MessageView(CreateView):
             models.Endpoint, {'endpoint_id': endpoint_id}, for_update=True)
         serial = data.get("serial")
 
-        if box == models.Box.INBOX:
+        if box == spec.Box.INBOX:
             check_cycle_is_open(endpoint)
             # if serial is not None:
             #     raise ValidationError(
             #         "Serial should be left null at the inbox.")
 
-        elif box == models.Box.PROCESSBOX:
+        elif box == spec.Box.PROCESSBOX:
             check_cycle_can_process(endpoint)
             check_is_owner(endpoint, request_user)
             if not isinstance(serial, (int, long)):
@@ -501,12 +502,12 @@ class MessageView(CreateView):
 
 
 def check_cycle_is_open(endpoint):
-    if endpoint.status != models.CycleStatus.OPEN:
+    if endpoint.status != spec.EndpointStatus.OPEN:
         raise PermissionDenied("Cycle %s is not open" % endpoint.endpoint_id)
 
 
 def check_cycle_can_process(endpoint):
-    if endpoint.status != models.CycleStatus.CLOSED:
+    if endpoint.status != spec.EndpointStatus.CLOSED:
         raise PermissionDenied("Cycle %s is not closed" % endpoint.endpoint_id)
 
 

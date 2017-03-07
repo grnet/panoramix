@@ -1,3 +1,2 @@
 apimas==0.3
-django-choices
 cliff

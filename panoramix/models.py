@@ -1,22 +1,23 @@
 from django.db import models
-from djchoices import DjangoChoices, ChoiceItem
 
 import datetime
+
+from panoramix import spec
 
 get_now = datetime.datetime.utcnow
 
 
-class NegotiationStatus(DjangoChoices):
-    OPEN = ChoiceItem("OPEN")
-    DONE = ChoiceItem("DONE")
+def to_choices(named):
+    values = list(named)
+    return [(value, value) for value in values]
 
 
 class Negotiation(models.Model):
     id = models.CharField(max_length=255, primary_key=True)
     text = models.TextField(null=True)
     status = models.CharField(
-        max_length=255, choices=NegotiationStatus.choices,
-        default=NegotiationStatus.OPEN)
+        max_length=255, choices=to_choices(spec.NegotiationStatus),
+        default=spec.NegotiationStatus.OPEN)
     timestamp = models.DateTimeField(null=True)
     consensus = models.CharField(max_length=255, null=True, unique=True)
 
@@ -61,29 +62,15 @@ class Contribution(models.Model):
         index_together = ["negotiation", "signer_key_id"]
 
 
-class KeyType(DjangoChoices):
-    RSA_ENC_SIG = ChoiceItem(1)
-    RSA_ENC = ChoiceItem(2)
-    RSA_SIG = ChoiceItem(3)
-    ELGAMAL = ChoiceItem(16)
-    DSA = ChoiceItem(17)
-    ELLIPTIC_CURVE = ChoiceItem(18)
-    ECDSA = ChoiceItem(19)
-
-
-class PeerStatus(DjangoChoices):
-    READY = ChoiceItem("READY")
-    DELETED = ChoiceItem("DELETED")
-
-
 class Peer(models.Model):
     name = models.CharField(max_length=255)
     peer_id = models.CharField(max_length=255, primary_key=True)
-    key_type = models.IntegerField(choices=KeyType.choices)
+    key_type = models.IntegerField()
     crypto_backend = models.CharField(max_length=255)
     crypto_params = models.TextField()
     key_data = models.TextField(unique=True)
-    status = models.CharField(max_length=255, choices=PeerStatus.choices)
+    status = models.CharField(
+        max_length=255, choices=to_choices(spec.PeerStatus))
 
     def log_consensus(self, consensus_id):
         self.consensus_logs.create(
@@ -100,7 +87,8 @@ class PeerConsensusLog(models.Model):
     peer = models.ForeignKey(Peer, related_name="consensus_logs")
     consensus_id = models.CharField(max_length=255)
     timestamp = models.DateTimeField()
-    status = models.CharField(max_length=255, choices=PeerStatus.choices)
+    status = models.CharField(
+        max_length=255, choices=to_choices(spec.PeerStatus))
 
     class Meta:
         index_together = ["peer", "id"]
@@ -117,27 +105,6 @@ class Owner(models.Model):
         return self.owner_key_id
 
 
-class EndpointType(DjangoChoices):
-    GATEWAY = ChoiceItem("GATEWAY")
-    PATH = ChoiceItem("PATH")
-    ONION = ChoiceItem("ONION")
-    ZEUS_BOOTH = ChoiceItem("ZEUS_BOOTH")
-    ZEUS_SK_MIX = ChoiceItem("ZEUS_SK_MIX")
-    ZEUS_SK_PARTIAL_DECRYPT = ChoiceItem("ZEUS_SK_PARTIAL_DECRYPT")
-    ZEUS_SK_DECRYPT = ChoiceItem("ZEUS_SK_DECRYPT")
-    ZEUS_SK_COMBINE = ChoiceItem("ZEUS_SK_COMBINE")
-    SPHINXMIX = ChoiceItem("SPHINXMIX")
-    SPHINXMIX_GATEWAY = ChoiceItem("SPHINXMIX_GATEWAY")
-    USER = ChoiceItem("USER")
-
-
-class CycleStatus(DjangoChoices):
-    OPEN = ChoiceItem("OPEN")
-    FULL = ChoiceItem("FULL")
-    CLOSED = ChoiceItem("CLOSED")
-    PROCESSED = ChoiceItem("PROCESSED")
-
-
 class Endpoint(models.Model):
     endpoint_id = models.CharField(max_length=255, primary_key=True)
     peer_id = models.CharField(max_length=255, db_index=True)
@@ -145,8 +112,7 @@ class Endpoint(models.Model):
     public = models.IntegerField()
     size_min = models.IntegerField()
     size_max = models.IntegerField()
-    endpoint_type = models.CharField(
-        max_length=255, choices=EndpointType.choices)
+    endpoint_type = models.CharField(max_length=255)
     endpoint_params = models.TextField()
 
     # size_current = models.IntegerField(default=0)
@@ -159,7 +125,8 @@ class Endpoint(models.Model):
     inbox_hash = models.CharField(max_length=255, null=True)
     outbox_hash = models.CharField(max_length=255, null=True)
     process_proof = models.TextField(null=True)
-    status = models.CharField(max_length=255, choices=CycleStatus.choices)
+    status = models.CharField(
+        max_length=255, choices=to_choices(spec.EndpointStatus))
 
     def log_consensus(self, consensus_id):
         self.consensus_logs.create(
@@ -174,17 +141,10 @@ class Endpoint(models.Model):
             return None
 
 
-class Box(DjangoChoices):
-    INBOX = ChoiceItem("INBOX")
-    ACCEPTED = ChoiceItem("ACCEPTED")
-    PROCESSBOX = ChoiceItem("PROCESSBOX")
-    OUTBOX = ChoiceItem("OUTBOX")
-
-
 class EndpointLink(models.Model):
     endpoint = models.ForeignKey(Endpoint, related_name="links")
-    to_box = models.CharField(max_length=255, choices=Box.choices)
-    from_box = models.CharField(max_length=255, choices=Box.choices)
+    to_box = models.CharField(max_length=255, choices=to_choices(spec.Box))
+    from_box = models.CharField(max_length=255, choices=to_choices(spec.Box))
     from_endpoint_id = models.CharField(max_length=255)
 
 
@@ -192,7 +152,8 @@ class EndpointConsensusLog(models.Model):
     endpoint = models.ForeignKey(Endpoint, related_name="consensus_logs")
     consensus_id = models.CharField(max_length=255)
     timestamp = models.DateTimeField()
-    status = models.CharField(max_length=255, choices=CycleStatus.choices)
+    status = models.CharField(
+        max_length=255, choices=to_choices(spec.EndpointStatus))
 
     class Meta:
         index_together = ["endpoint", "id"]
@@ -205,7 +166,8 @@ class Message(models.Model):
     text = models.TextField()
     message_hash = models.CharField(max_length=255)
     endpoint_id = models.CharField(max_length=255)
-    box = models.CharField(max_length=255, choices=Box.choices, db_index=True)
+    box = models.CharField(
+        max_length=255, choices=to_choices(spec.Box), db_index=True)
 
     class Meta:
         unique_together = ["endpoint_id", "box", "message_hash"]

@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 def afield(d=None):
     if d is None:
         d = {}
@@ -25,6 +27,16 @@ def aninteger(d=None):
         d = {}
     specs = {
         ".integer": {},
+    }
+    specs.update(d)
+    return afield(specs)
+
+
+def achoice(choices, d=None):
+    if d is None:
+        d = {}
+    specs = {
+        ".choices": {"allowed": to_choices(choices)}
     }
     specs.update(d)
     return afield(specs)
@@ -165,6 +177,34 @@ def namespaced(d):
     }
 
 
+def to_choices(choice_namedtuple):
+    return list(choice_namedtuple)
+
+
+def mk_tuple(name, fields):
+    tpl = namedtuple(name, fields)
+    return tpl(*fields)
+
+
+NegotiationStatus = mk_tuple("NegotiationStatus", ["OPEN", "DONE"])
+PeerStatus = mk_tuple("PeerStatus", ["READY", "DELETED"])
+EndpointStatus = mk_tuple("EndpointStatus",
+                          ["OPEN", "FULL", "CLOSED", "PROCESSED"])
+Box = mk_tuple("Box", ["INBOX", "ACCEPTED", "PROCESSBOX", "OUTBOX"])
+
+
+# Key types:
+# RSA_ENC_SIG = 1
+# RSA_ENC = 2
+# RSA_SIG = 3
+# ELGAMAL = 16
+# DSA = 17
+# ELLIPTIC_CURVE = 18
+# ECDSA = 19
+
+
+
+
 NEGOTIATIONS = {
     ".cli_commands": {},
     ".collection": {},
@@ -178,7 +218,7 @@ NEGOTIATIONS = {
         "data": namespaced({
             "id": readonlystring(),
             "text": readonlystring(),
-            "status": readonlystring(),
+            "status": achoice(NegotiationStatus, {".readonly": {}}),
             "timestamp": afield({".datetime": {},
                                  ".readonly": {}}),
             "consensus": readonlystring({".nullable": {}}),
@@ -220,15 +260,16 @@ CONTRIBUTIONS = {
 }
 
 
-def CONSENSUS_LOGS():
+def CONSENSUS_LOGS(choices):
     return afield({
         ".readonly": {},
         ".structarray": {
             "consensus_id": astring(),
             "timestamp": afield({".datetime": {}}),
-            "status": astring(),
+            "status": achoice(choices),
         }
     })
+
 
 PEERS = {
     ".cli_commands": {},
@@ -249,14 +290,15 @@ PEERS = {
             "owners": afield({
                 ".structarray": {
                     "owner_key_id": astring()}}),  # .initwrite: {}
-            "status": astring({".required": {}}),
-            "consensus_logs": CONSENSUS_LOGS(),
+            "status": achoice(PeerStatus, {".required": {}}),
+            "consensus_logs": CONSENSUS_LOGS(PeerStatus),
         }),
         "info": INFO(),
         "meta": META(),
         "by_consensus": BY_CONSENSUS(),
     }
 }
+
 
 ENDPOINTS = {
     ".cli_commands": {},
@@ -279,11 +321,11 @@ ENDPOINTS = {
             "endpoint_params": astring(),  # .initwrite: {}
             "links": afield({
                 ".structarray": {
-                    "to_box": astring(),
-                    "from_box": astring(),
+                    "to_box": achoice(Box),
+                    "from_box": achoice(Box),
                     "from_endpoint_id": astring()}}),  # .initwrite: {}
             "public": aninteger({".required": {}}),
-            "status": astring({".required": {}}),
+            "status": achoice(EndpointStatus, {".required": {}}),
             "process_proof": astring(),
             "message_hashes": {
                 ".cli_option": {},
@@ -302,13 +344,14 @@ ENDPOINTS = {
             },
             "inbox_hash": readonlystring(),
             "outbox_hash": readonlystring(),
-            "consensus_logs": CONSENSUS_LOGS(),
+            "consensus_logs": CONSENSUS_LOGS(EndpointStatus),
         }),
         "info": INFO(),
         "meta": META(),
         "by_consensus": BY_CONSENSUS(),
     }
 }
+
 
 MESSAGES = {
     ".cli_commands": {},
@@ -327,7 +370,7 @@ MESSAGES = {
             "sender": astring({".required": {}}),
             "recipient": astring({".required": {}}),
             "text": astring({".required": {}}),
-            "box": astring({".required": {}}),
+            "box": achoice(Box, {".required": {}}),
             "message_hash": astring({".readonly": {}}),
         }),
         "info": INFO(),
