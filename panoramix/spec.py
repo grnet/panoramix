@@ -4,7 +4,6 @@ def afield(d=None):
     if d is None:
         d = {}
     r = {
-        ".cli_option": {},
         ".field": {},
         ".drf_field": {},
     }
@@ -78,13 +77,11 @@ def INFO():
     return {
         ".field": {},
         ".drf_field": {"onmodel": False},
-        ".cli_option": {},
         ".writeonly": {},
         ".struct": {
             "operation": {
                 ".field": {},
                 ".drf_field": {"onmodel": False},
-                ".cli_option": {},
                 ".string": {},
                 ".required": {},
                 ".writeonly": {},
@@ -92,7 +89,6 @@ def INFO():
             "resource": {
                 ".field": {},
                 ".drf_field": {"onmodel": False},
-                ".cli_option": {},
                 ".string": {},
                 ".required": {},
                 ".writeonly": {},
@@ -100,14 +96,12 @@ def INFO():
             "id": {
                 ".field": {},
                 ".drf_field": {"onmodel": False},
-                ".cli_option": {},
                 ".string": {},
                 ".writeonly": {},
             },
             "on_last_consensus_id": {
                 ".field": {},
                 ".drf_field": {"onmodel": False, "default": ""},
-                ".cli_option": {},
                 ".string": {},
                 ".writeonly": {},
             },
@@ -119,13 +113,11 @@ def META():
     return {
         ".field": {},
         ".drf_field": {"onmodel": False},
-        ".cli_option": {},
         ".writeonly": {},
         ".struct": {
             "signature": {
                 ".field": {},
                 ".drf_field": {"onmodel": False},
-                ".cli_option": {},
                 ".string": {},
                 ".required": {},
                 ".writeonly": {},
@@ -133,7 +125,6 @@ def META():
             "key_data": {
                 ".field": {},
                 ".drf_field": {"onmodel": False},
-                ".cli_option": {},
                 ".string": {},
                 ".required": {},
                 ".writeonly": {},
@@ -146,13 +137,11 @@ def BY_CONSENSUS():
     return {
         ".field": {},
         ".drf_field": {"onmodel": False},
-        ".cli_option": {},
         ".writeonly": {},
         ".struct": {
             "consensus_id": {
                 ".field": {},
                 ".drf_field": {"onmodel": False},
-                ".cli_option": {},
                 ".string": {},
                 ".required": {},
                 ".writeonly": {},
@@ -160,7 +149,6 @@ def BY_CONSENSUS():
             "consensus_type": {
                 ".field": {},
                 ".drf_field": {"onmodel": False},
-                ".cli_option": {},
                 ".string": {},
                 ".required": {},
                 ".writeonly": {},
@@ -168,7 +156,6 @@ def BY_CONSENSUS():
             "consensus_part": {
                 ".field": {},
                 ".drf_field": {"onmodel": False},
-                ".cli_option": {},
                 ".integer": {},
                 ".nullable": {},
                 ".writeonly": {},
@@ -193,7 +180,6 @@ def namespaced(d):
     return {
         ".field": {},
         ".drf_field": {"onmodel": False},
-        ".cli_option": {},
         ".struct": d,
     }
 
@@ -227,7 +213,6 @@ Box = mk_tuple("Box", ["INBOX", "ACCEPTED", "PROCESSBOX", "OUTBOX"])
 
 
 NEGOTIATIONS = {
-    ".cli_commands": {},
     ".collection": {},
     ".drf_collection": DRF("panoramix.models.Negotiation",
                            {"mixins": ["panoramix.functions.NegotiationView"],
@@ -257,7 +242,6 @@ NEGOTIATIONS = {
 }
 
 CONTRIBUTIONS = {
-    ".cli_commands": {},
     ".collection": {},
     ".drf_collection": DRF("panoramix.models.Contribution",
                            {"mixins": ["panoramix.functions.ContributionView"],
@@ -293,7 +277,6 @@ def CONSENSUS_LOGS(choices):
 
 
 PEERS = {
-    ".cli_commands": {},
     ".collection": {},
     ".drf_collection": DRF("panoramix.models.Peer",
                            {"mixins": ["panoramix.functions.PeerView"]}),
@@ -322,7 +305,6 @@ PEERS = {
 
 
 ENDPOINTS = {
-    ".cli_commands": {},
     ".collection": {},
     ".drf_collection": DRF("panoramix.models.Endpoint",
                            {"mixins": ["panoramix.functions.EndpointView"],
@@ -349,13 +331,11 @@ ENDPOINTS = {
             "status": achoice(EndpointStatus, {".required": {}}),
             "process_proof": atext(),
             "message_hashes": {
-                ".cli_option": {},
                 ".field": {},
                 ".drf_field": {"onmodel": False},
                 ".writeonly": {},
                 ".structarray": {
                     "hash": {
-                        ".cli_option": {},
                         ".field": {},
                         ".drf_field": {"onmodel": False},
                         ".string": {},
@@ -375,7 +355,6 @@ ENDPOINTS = {
 
 
 MESSAGES = {
-    ".cli_commands": {},
     ".collection": {},
     ".drf_collection": DRF("panoramix.models.Message",
                            {"mixins": ["panoramix.functions.MessageView"],
