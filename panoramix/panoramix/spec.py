@@ -78,7 +78,7 @@ def DRF(model, d=None):
         d = {}
     r = {
         "model": model,
-        "authentication_classes": ["panoramix.auth.Auth"],
+        "authentication_classes": ["panoramix.server.auth.Auth"],
         "permission_classes": [],
     }
     r.update(d)
@@ -113,8 +113,9 @@ Box = mk_tuple("Box", ["INBOX", "ACCEPTED", "PROCESSBOX", "OUTBOX"])
 
 NEGOTIATIONS = {
     ".collection": {},
-    ".drf_collection": DRF("panoramix.models.Negotiation",
-                           {"mixins": ["panoramix.functions.NegotiationView"],
+    ".drf_collection": DRF("panoramix.server.models.Negotiation",
+                           {"mixins":
+                            ["panoramix.server.functions.NegotiationView"],
                             "filter_fields": ["consensus"]}),
     ".actions": {".create": {},
                  ".retrieve": {},
@@ -137,8 +138,9 @@ NEGOTIATIONS = {
 
 CONTRIBUTIONS = {
     ".collection": {},
-    ".drf_collection": DRF("panoramix.models.Contribution",
-                           {"mixins": ["panoramix.functions.ContributionView"],
+    ".drf_collection": DRF("panoramix.server.models.Contribution",
+                           {"mixins":
+                            ["panoramix.server.functions.ContributionView"],
                             "filter_fields": ["negotiation", "id"]}),
     ".actions": {".create": {},
                  ".retrieve": {},
@@ -169,8 +171,9 @@ def CONSENSUS_LOGS(choices):
 
 PEERS = {
     ".collection": {},
-    ".drf_collection": DRF("panoramix.models.Peer",
-                           {"mixins": ["panoramix.functions.PeerView"]}),
+    ".drf_collection": DRF("panoramix.server.models.Peer",
+                           {"mixins":
+                            ["panoramix.server.functions.PeerView"]}),
     ".actions": {".list": {},
                  ".create": {},
                  ".retrieve": {}},
@@ -196,8 +199,9 @@ PEERS = {
 
 ENDPOINTS = {
     ".collection": {},
-    ".drf_collection": DRF("panoramix.models.Endpoint",
-                           {"mixins": ["panoramix.functions.EndpointView"],
+    ".drf_collection": DRF("panoramix.server.models.Endpoint",
+                           {"mixins":
+                            ["panoramix.server.functions.EndpointView"],
                             "filter_fields": ["peer_id", "status"]}),
     ".actions": {".create": {},
                  ".list": {},
@@ -234,8 +238,9 @@ ENDPOINTS = {
 
 MESSAGES = {
     ".collection": {},
-    ".drf_collection": DRF("panoramix.models.Message",
-                           {"mixins": ["panoramix.functions.MessageView"],
+    ".drf_collection": DRF("panoramix.server.models.Message",
+                           {"mixins":
+                            ["panoramix.server.functions.MessageView"],
                             "filter_fields": ["endpoint_id", "box"]}),
     ".actions": {".create": {},
                  ".list": {}},

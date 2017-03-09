@@ -3,7 +3,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 from apimas.drf import django_rest
-from panoramix.permissions import PERMISSION_RULES
+from panoramix.server.permissions import PERMISSION_RULES
 from panoramix.spec import SPEC
 
 SPEC['panoramix']['.endpoint']['permissions'] = PERMISSION_RULES

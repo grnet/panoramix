@@ -3,7 +3,7 @@ import os
 
 CURPATH = os.path.dirname(os.path.realpath(__file__))
 
-PACKAGE_NAME = "panoramix"
+PACKAGE_NAME = "panoramix-server"
 SHORT_DESCRIPTION = "The Panoramix Project"
 
 version_file = os.path.join(CURPATH, "..", "version.txt")
@@ -32,6 +32,19 @@ TESTS_REQUIRES = [
 ]
 
 
+def get_all_data_files(dest_path, source_path):
+    dest_path = dest_path.strip('/')
+    source_path = source_path.strip('/')
+    source_len = len(source_path)
+    return [
+        (
+            os.path.join(dest_path, path[source_len:].strip('/')),
+            [os.path.join(path, f) for f in files],
+        )
+        for path, _, files in os.walk(source_path)
+    ]
+
+
 setup(
     name=PACKAGE_NAME,
     version=VERSION,
@@ -48,11 +61,15 @@ setup(
     extras_require=EXTRAS_REQUIRES,
     tests_require=TESTS_REQUIRES,
 
+    data_files=[
+        ('panoramix_ui/templates', ['panoramix_ui/templates/app.html',
+                                    'panoramix_ui/templates/base.html']),
+    ] + get_all_data_files('panoramix_ui/static/', 'panoramix_ui/static'),
+
     entry_points={
         'console_scripts': [
-            'panoramix = panoramix.cli:main',
-            'panoramix-wizard = panoramix.wizard:main',
-            'sphinxmix-client = panoramix.sphinxmix_client:main',
+            'panoramix-manage = panoramix_django.manage:main',
+            'panoramix-server-wizard = panoramix.server.server_wizard:main',
         ],
     },
 )

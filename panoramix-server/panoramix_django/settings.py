@@ -37,11 +37,11 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
-    'panoramix',
+    'panoramix.server',
 )
 
 MIDDLEWARE_CLASSES = (
-    'panoramix.middleware.ExceptionMiddleware',
+    'panoramix.server.middleware.ExceptionMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

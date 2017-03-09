@@ -1,6 +1,6 @@
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from panoramix import functions
+from panoramix.server import functions
 from panoramix import canonical
 
 

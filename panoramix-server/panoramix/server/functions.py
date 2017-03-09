@@ -6,10 +6,10 @@ from django.http import Http404
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
 from panoramix import spec
-from panoramix import models
+from panoramix.server import models
 from panoramix import canonical
 from panoramix import utils
-from panoramix.skeleton import CreateView, PartialUpdateView
+from panoramix.server.skeleton import CreateView, PartialUpdateView
 from panoramix.config import get_server_backend
 
 backend = get_server_backend()
