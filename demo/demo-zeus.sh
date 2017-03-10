@@ -112,7 +112,7 @@ read -p "Next: negotiate to create and open booth endpoint; press <enter>. " y
 
 FINAL_DECRYPT_EP="FINAL_DECR1"
 
-run_with_neg INBOX_NEG "endpoint create --endpoint-id BOOTH1 --peer-id ${MIX_PEER} --size-min 2 --size-max 10 --endpoint-type ZEUS_BOOTH --link ${FINAL_DECRYPT_EP} OUTBOX PROCESSBOX"
+run_with_neg INBOX_NEG "endpoint create --endpoint-id BOOTH1 --peer-id ${MIX_PEER} --size-min 2 --size-max 10 --endpoint-type ZEUS_BOOTH --public --link ${FINAL_DECRYPT_EP} OUTBOX PROCESSBOX"
 INBOX_EP="${consensus_result}"
 BOOTH_CREATE_CONSENSUS="${consensus}"
 

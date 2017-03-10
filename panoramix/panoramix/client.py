@@ -315,8 +315,8 @@ class PanoramixClient(object):
 
     def endpoint_create(
             self, endpoint_id, peer_id, endpoint_type, endpoint_params,
-            size_min, size_max, description, links=None, consensus_id=None,
-            negotiation_id=None, accept=False,
+            size_min, size_max, description, public=False, links=None,
+            consensus_id=None, negotiation_id=None, accept=False,
             next_negotiation_id=None):
         info = mk_info("endpoint", "create")
         attrs = {
@@ -327,6 +327,7 @@ class PanoramixClient(object):
                 "endpoint_type": endpoint_type,
                 "endpoint_params": endpoint_params,
                 "description": description,
+                "public": int(public),
                 "links": links,
                 "size_min": size_min,
                 "size_max": size_max,

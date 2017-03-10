@@ -322,6 +322,7 @@ class endpoint_create(NegotiationCommand):
                 "--endpoint-id", "--size-min", "--size-max",
                 "--description", "--consensus-id"]
         add_arguments(parser, args)
+        parser.add_argument("--public", action="store_true", default=False)
         parser.add_argument("--param", action="append",
                             nargs=2, metavar=("KEY", "VALUE"))
         parser.add_argument("--link", action="append",
@@ -342,6 +343,7 @@ class endpoint_create(NegotiationCommand):
         size_min = int(vargs["size_min"])
         size_max = int(vargs["size_max"])
         description = vargs["description"] or ""
+        public = vargs["public"]
         consensus_id = vargs["consensus_id"]
         negotiation_id = vargs["negotiation_id"]
         accept = vargs["accept"]
@@ -349,7 +351,7 @@ class endpoint_create(NegotiationCommand):
         client = mk_panoramix_client(cfg)
         is_contrib, d = client.endpoint_create(
             endpoint_id, peer_id, endpoint_type, endpoint_params,
-            size_min, size_max, description, links=links,
+            size_min, size_max, description, public=public, links=links,
             consensus_id=consensus_id,
             negotiation_id=negotiation_id, accept=accept)
         id_key = "id" if is_contrib else "endpoint_id"
