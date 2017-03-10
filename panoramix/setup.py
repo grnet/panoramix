@@ -17,16 +17,27 @@ PACKAGES = find_packages(PACKAGES_ROOT)
 CLASSIFIERS = []
 
 
-requirements_file = os.path.join(CURPATH, "requirements.txt")
-with open(requirements_file) as f:
-    INSTALL_REQUIRES = [
-        x.strip('\n')
-        for x in f.readlines()
-        if x and x[0] != '#'
-    ]
+def read_requirements(filename):
+    with open(filename) as f:
+        return [
+            x.strip('\n')
+            for x in f.readlines()
+            if x and x[0] != '#'
+        ]
 
-EXTRAS_REQUIRES = {
-}
+
+def from_file(extra=None):
+    suffix = "_%s" % extra if extra else ""
+    filename = "requirements%s.txt" % suffix
+    return os.path.join(CURPATH, filename)
+
+
+INSTALL_REQUIRES = read_requirements(from_file())
+
+
+EXTRAS = ["sphinxmix", "gpg", "zeus"]
+EXTRAS_REQUIRES = {extra: read_requirements(from_file(extra))
+                   for extra in EXTRAS}
 
 TESTS_REQUIRES = [
 ]
@@ -52,7 +63,7 @@ setup(
         'console_scripts': [
             'panoramix = panoramix.cli:main',
             'panoramix-wizard = panoramix.wizard:main',
-            'sphinxmix-client = panoramix.sphinxmix_client:main',
+            'sphinxmix-client = panoramix.sphinxmix_client:main [sphinxmix]',
         ],
     },
 )
