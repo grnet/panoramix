@@ -5,7 +5,7 @@ from hashlib import sha1
 from petlib import ecdsa, ec, bn
 from sphinxmix import SphinxParams, SphinxClient, SphinxNode
 
-from panoramix import canonical, utils
+from panoramix import canonical, utils, interface
 
 BACKEND_NAME = "SPHINXMIX"
 
@@ -215,6 +215,24 @@ def get_server(config):
     return Server(crypto_params)
 
 
+def get_owners_sorted(peer):
+    owner_ids = []
+    for owner in peer["owners"]:
+        owner_id = owner["owner_key_id"]
+        owner_ids.append(owner_id)
+    owner_ids.sort()
+    return owner_ids
+
+
+class SphinxmixMixnet(interface.Mixnet):
+    def __init__(self, description):
+        self.description = description
+        self.gateway = description["gateway"]
+        self.mixnet_peer = description["mixnet_peer"]
+        self.owners = get_owners_sorted(self.mixnet_peer)
+        self.known_peers = self.owners + [self.mixnet_peer]
+
+
 class Client(object):
     def __init__(self, crypto_params, public, secret):
         self._crypto_params = crypto_params
@@ -259,6 +277,17 @@ class Client(object):
 
     def encrypt(self, data, recipients):
         return encrypt(data, recipients, self.params)
+
+    def decide_route(self, mixnet, recipient):
+        owners = mixnet.owners
+        return owners + [recipient]
+
+    def prepare_message(self, mixnet, recipient, message):
+        assert isinstance(mixnet, SphinxmixMixnet)
+        route = self.decide_route(mixnet, recipient)
+        enc_data = self.crypto_client.encrypt(data, route)
+        sender = self.crypto_client.get_keyid()
+        return interface.Message(sender, recipient, enc_data)
 
     def process(self, endpoint, messages):
         endpoint_type = endpoint["endpoint_type"]
