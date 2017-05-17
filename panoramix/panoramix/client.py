@@ -100,6 +100,7 @@ class PanoramixClient(object):
     clients = None
     backend = None
     crypto_client = None
+    mixnet = None
 
     def register_catalog_url(self, catalog_url):
         self.catalog_url = catalog_url
@@ -111,6 +112,12 @@ class PanoramixClient(object):
     def register_crypto_client(self, cfg):
         assert self.backend is not None
         self.crypto_client = self.backend.get_client(cfg)
+
+    def register_mixnet(self, description):
+        assert self.backend is not None
+        self.mixnet = self.backend.mixnet_class(description)
+        for peer in self.mixnet.known_peers:
+            self.peer_import(peer)
 
     def mk_endpoint_hyperlink(self, endpoint_id):
         endpoint = self.clients.endpoints.endpoint.rstrip('/')
@@ -387,6 +394,21 @@ class PanoramixClient(object):
         }
         request = self.mk_signed_request(attrs)
         return request
+
+    def construct_message(self, recipient, message):
+        return self.crypto_client.prepare_message(
+            self.mixnet, recipient, message)
+
+    def send_message_to_mixnet(self, message):
+        endpoint_id = self.mixnet.gateway["endpoint_id"]
+        request = self.prepare_send_message(
+            endpoint_id,
+            INBOX,
+            message.body,
+            message.sender,
+            message.recipient)
+        r = self.clients.messages.create(data=request)
+        return r.json()
 
     def message_send(self, endpoint_id, data, recipients):
         enc_data = self.crypto_client.encrypt(data, recipients)

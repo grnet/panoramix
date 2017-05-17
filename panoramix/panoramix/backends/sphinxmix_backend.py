@@ -230,7 +230,10 @@ class SphinxmixMixnet(interface.Mixnet):
         self.gateway = description["gateway"]
         self.mixnet_peer = description["mixnet_peer"]
         self.owners = get_owners_sorted(self.mixnet_peer)
-        self.known_peers = self.owners + [self.mixnet_peer]
+        self.known_peers = self.owners + [self.mixnet_peer["peer_id"]]
+
+
+mixnet_class = SphinxmixMixnet
 
 
 class Client(object):
@@ -285,8 +288,8 @@ class Client(object):
     def prepare_message(self, mixnet, recipient, message):
         assert isinstance(mixnet, SphinxmixMixnet)
         route = self.decide_route(mixnet, recipient)
-        enc_data = self.crypto_client.encrypt(data, route)
-        sender = self.crypto_client.get_keyid()
+        enc_data = self.encrypt(message, route)
+        sender = self.get_keyid()
         return interface.Message(sender, recipient, enc_data)
 
     def process(self, endpoint, messages):
