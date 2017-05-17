@@ -6,6 +6,7 @@ from cliff.command import Command
 
 LOG = logging.getLogger(__name__)
 
+
 class CommandWrapper(object):
     """Wrap up a command class already imported to make it look like a plugin.
     """
@@ -28,11 +29,12 @@ class MyCommandManager(CommandManager):
         namespace_dir = os.path.join(os.path.dirname(m.__file__))
         for entry in os.listdir(namespace_dir):
             filename = os.path.basename(entry)
-            filename, file_ext =  os.path.splitext(filename)
+            filename, file_ext = os.path.splitext(filename)
             if file_ext != ".py":
                 continue
 
-            m = __import__('{}.{}'.format(namespace, filename), fromlist=[filename])
+            m = __import__('{}.{}'.format(namespace, filename),
+                           fromlist=[filename])
 
             for attr, value in inspect.getmembers(m, inspect.isclass):
                 # Skip 'Command' class

@@ -192,8 +192,7 @@ CONTRIBUTIONS = {
     ".collection": {},
     ".drf_collection": DRF("panoramix.models.Contribution",
                            {"mixins": ["panoramix.functions.ContributionView"],
-                            "filter_fields": ["negotiation", "id"]
-                           }),
+                            "filter_fields": ["negotiation", "id"]}),
     "actions": {".create": {},
                 ".retrieve": {},
                 ".list": {}},

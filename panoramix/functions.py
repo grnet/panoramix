@@ -2,7 +2,6 @@ import os
 import base64
 import datetime
 import hashlib
-from collections import namedtuple
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
@@ -289,7 +288,6 @@ class NegotiationView(CreateView):
 
     def creation_logic(self, request):
         request_data = request.data
-        data = request_data.get("data", {})
         info = request_data.get("info", {})
         validate_operation(info, "create", self.resource_name)
         return self.new_negotiation()
