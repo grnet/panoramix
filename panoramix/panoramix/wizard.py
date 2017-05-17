@@ -710,11 +710,10 @@ def create_ep_contribution(cycle, negotiation_id, peer_id):
 
 def inform_send_message(endpoints):
     public_endpoint = [e for e in endpoints if e["public"]][0]
-    public_endpoint_id = public_endpoint["endpoint_id"]
-    peer_id = public_endpoint["peer_id"]
-    peer_href = client.mk_peer_hyperlink(peer_id)
-    ui.inform("Read to accept messages to mixnet %s\n (endpoint '%s')." %
-              (peer_href, public_endpoint_id))
+    public_endpoint_href = client.mk_endpoint_hyperlink(
+        public_endpoint["endpoint_id"])
+    ui.inform("Ready to accept messages to mixnet %s\n." %
+              public_endpoint_href)
 
 
 def split_invitation(invitation):

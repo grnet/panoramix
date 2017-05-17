@@ -63,6 +63,8 @@ setup(
     entry_points={
         'console_scripts': [
             'panoramix-agent = panoramix.agent.agent:main',
+            'sphinxmix-agent = panoramix.agent.sphinxmix_agent:main',
+            'panoramix-client = panoramix.agent.client:main',
         ],
     },
 )

@@ -63,7 +63,6 @@ setup(
         'console_scripts': [
             'panoramix = panoramix.cli:main',
             'panoramix-wizard = panoramix.wizard:main',
-            'sphinxmix-client = panoramix.sphinxmix_client:main [sphinxmix]',
         ],
     },
 )
