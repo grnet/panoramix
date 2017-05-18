@@ -1,19 +1,44 @@
 Panoramix mixnet server and client
 ==================================
 
+Overview
+--------
+
+This repository includes three python packages:
+
+  * panoramix: The main package that implements the mixnet logic
+  * panoramix-server: A server implementing the panoramix API
+  * panoramix-agent: A local agent
+
+
 Installation
 ------------
 
-In a virtualenv, run:
+In each of the three packages, run:
 
-  pip install -r requirements.txt
   python setup.py install
 
-This packages includes three cryptographic backends: 'gpg', 'zeus', and
-'sphinxmix'. In order to use them, you must install the respective
+The panoramix package includes three cryptographic backends: 'gpg', 'zeus',
+and 'sphinxmix'. In order to use them, you must install the respective
 dependencies with:
 
   pip install -r requirements_<backend>.txt
+
+
+Usage
+-----
+
+The panoramix-server package provides a wizard (panoramix-server-wizard) to
+facilitate the setup of the server.
+
+The panoramix package provides a wizard (panoramix-wizard) to allow the
+mixnet contributors to set up a mixnet (currently works with the sphinxmix
+backend only).
+
+The panoramix-agent package provides a local agent to enable an end user to
+use a mixnet. As an example, sphinxmix-agent is a wizard to configure and
+launch an agent for sphinxmix. The end user can send messages to the mixnet
+by posting it to the local agent, using the panoramix-client.
 
 
 Demo
