@@ -290,7 +290,9 @@ class Client(object):
         route = self.decide_route(mixnet, recipient)
         enc_data = self.encrypt(message, route)
         sender = self.get_keyid()
-        return interface.Message(sender, recipient, enc_data)
+        return interface.Message(sender,
+                                 mixnet.mixnet_peer["peer_id"],
+                                 enc_data)
 
     def process(self, endpoint, messages):
         endpoint_type = endpoint["endpoint_type"]
