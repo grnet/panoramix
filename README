@@ -44,7 +44,9 @@ by posting it to the local agent, using the panoramix-client.
 Demo
 ----
 
-For a demonstration of Panoramix workflow, see demo/README.
+Check file EXAMPLE for an extended description on how to setup and use a
+sphinxmix mixnet. For a demonstration of Panoramix workflow, see
+demo/README.
 
 
 Copyright and license

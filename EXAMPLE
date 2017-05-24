@@ -1,0 +1,45 @@
+Example setup of a sphinxmix mixnet
+===================================
+
+For a minimal setup, let's consider four players: the server, two sphinxmix
+contributors and an end user. We will run each one in a terminal with their
+own configuration: set environment variable PANORAMIX_CONFIG to some
+different file in each terminal.
+
+Run panoramix-server-wizard, just press Enter for defaults and follow
+instructions to setup the server.
+
+Run two instances of panoramix-wizard. Choose role 'create' for the first
+and 'join' for the second.
+
+Select to create one invitation at the 'create' wizard and pass the value on
+to the join wizard.
+
+After you setup everything, you will reach something like:
+
+  Ready to accept messages to mixnet http://127.0.0.1:8000/panoramix/endpoints/<endpoint_name>/
+
+You have set up a sphinxmix network with two mixes, in a static
+configuration (sorted alphabetically).
+
+Then run sphimxmix-agent and initialize it with the mixnet URL. In another
+terminal with the same PANORAMIX_CONFIG as the agent, run panoramix-client
+and send some messages through the mixnet.
+
+You can choose any string as recipient. After you send SIZE_MIN messages,
+you can notice at the wizard terminals that the messages are being
+processed.
+
+Messages are not actually sent to a recipient, but you can review the mixnet
+output with:
+
+  panoramix outbox list --endpoint-id <endpoint_name>
+
+You can also use the panoramix API client to view the (encrypted) input of
+the mixnet with:
+
+  panoramix accepted list --endpoint-id <endpoint_name>
+
+or view all mixnet endpoints with:
+
+  panoramix endpoint list
