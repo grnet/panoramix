@@ -242,6 +242,7 @@ def operate(endpoint_ids, peer_id, combined_peer_id, role):
 
 
 def check_negotiation_wizard(negotiation_id, invitations):
+    invitations = list(invitations)
     me = cfg.get("PEER_ID")
     contributions = filter_data_only(client.contribution_list(negotiation_id))
     contributions = [c for c in contributions if c["latest"]]
