@@ -1,2 +1,2 @@
-apimas==0.3
+apimas>=0.3.2,<0.4
 cliff
