@@ -61,11 +61,6 @@ setup(
     extras_require=EXTRAS_REQUIRES,
     tests_require=TESTS_REQUIRES,
 
-    data_files=[
-        ('panoramix_ui/templates', ['panoramix_ui/templates/app.html',
-                                    'panoramix_ui/templates/base.html']),
-    ] + get_all_data_files('panoramix_ui/static/', 'panoramix_ui/static'),
-
     entry_points={
         'console_scripts': [
             'panoramix-manage = panoramix_django.manage:main',
