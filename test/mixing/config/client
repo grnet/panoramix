@@ -1,0 +1,97 @@
+{
+  "MIXNET_URL": {
+    "description": null, 
+    "value": "http://127.0.0.1:8000/panoramix/endpoints/ep_1/", 
+    "title": "MIXNET_URL"
+  }, 
+  "CATALOG_URL": {
+    "description": null, 
+    "value": "http://127.0.0.1:8000", 
+    "title": "CATALOG_URL"
+  }, 
+  "PEER_ID": {
+    "description": null, 
+    "value": "03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a", 
+    "title": "PEER_ID"
+  }, 
+  "CRYPTO_BACKEND": {
+    "description": null, 
+    "value": "panoramix.backends.sphinxmix_backend", 
+    "title": "CRYPTO_BACKEND"
+  }, 
+  "CRYPTO_PARAMS": {
+    "description": null, 
+    "value": {
+      "BODY_LEN": 1024, 
+      "GROUP": 713, 
+      "HEADER_LEN": 192
+    }, 
+    "title": "CRYPTO_PARAMS"
+  }, 
+  "MIXNET_DESCRIPTION": {
+    "description": null, 
+    "value": {
+      "gateway": {
+        "status": "OPEN", 
+        "peer_id": "03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a", 
+        "description": "Gateway for mixnet 'ep_1'", 
+        "links": [
+          {
+            "to_box": "PROCESSBOX", 
+            "from_endpoint_id": "03d2d43_for_ep_ep_1", 
+            "from_box": "OUTBOX"
+          }
+        ], 
+        "endpoint_params": "{\n}\n", 
+        "inbox_hash": null, 
+        "size_max": 100, 
+        "process_proof": null, 
+        "size_min": 100, 
+        "consensus_logs": [
+          {
+            "status": "OPEN", 
+            "timestamp": "2018-01-26T12:56:31.447084", 
+            "consensus_id": "cb6100e3bf4dc8de6ab847c649c5ea11616f285d27681f1d7b226a49ae41ff9a"
+          }
+        ], 
+        "outbox_hash": null, 
+        "endpoint_id": "ep_1", 
+        "endpoint_type": "SPHINXMIX_GATEWAY", 
+        "public": 1
+      }, 
+      "mixnet_peer": {
+        "status": "READY", 
+        "key_type": 18, 
+        "owners": [
+          {
+            "owner_key_id": "031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d"
+          }, 
+          {
+            "owner_key_id": "03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978"
+          }
+        ], 
+        "name": "testmixnet", 
+        "key_data": "03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a", 
+        "consensus_logs": [
+          {
+            "status": "READY", 
+            "timestamp": "2018-01-26T12:56:17.518132", 
+            "consensus_id": "a4967f91c99f3effe2b833a0e1a64705df05cc86cf60ae32e864b007f04e60db"
+          }
+        ], 
+        "crypto_backend": "SPHINXMIX", 
+        "peer_id": "03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a", 
+        "crypto_params": "{\n018_BODY_LEN: 0130400,\n015_GROUP: 01302c9,\n01a_HEADER_LEN: 0120c0}\n"
+      }
+    }, 
+    "title": "MIXNET_DESCRIPTION"
+  }, 
+  "KEY": {
+    "description": null, 
+    "value": {
+      "SECRET": "F22C7E4B280D6E09599D1DF7E777251CC251F9015F718C6F920C9349", 
+      "PUBLIC": "021628e7b9bd010a6854787b7c255f114f10e72c2ae623978babf58d96"
+    }, 
+    "title": "KEY"
+  }
+}

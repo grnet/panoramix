@@ -1,0 +1,270 @@
+{
+  "CATALOG_URL": {
+    "description": null, 
+    "value": "http://127.0.0.1:8000/", 
+    "title": "CATALOG_URL"
+  }, 
+  "SETUP_ROLE": {
+    "description": null, 
+    "value": "join", 
+    "title": "SETUP_ROLE"
+  }, 
+  "JOIN_INVITATION": {
+    "description": null, 
+    "value": "0219LesdJZaJn7petlp-JswQN-LRwT9YnqT9wMWr8tc|3NcP7upQyeyaMqUgfW0UEaW8oi-xipIKHCpTFoljv6w", 
+    "title": "JOIN_INVITATION"
+  }, 
+  "JOIN_NEGOTIATION_ID": {
+    "description": null, 
+    "value": "0219LesdJZaJn7petlp-JswQN-LRwT9YnqT9wMWr8tc", 
+    "title": "JOIN_NEGOTIATION_ID"
+  }, 
+  "JOIN_INVITATION_ID": {
+    "description": null, 
+    "value": "3NcP7upQyeyaMqUgfW0UEaW8oi-xipIKHCpTFoljv6w", 
+    "title": "JOIN_INVITATION_ID"
+  }, 
+  "JOIN_COORD_INITIAL_CONTRIBUTION": {
+    "description": null, 
+    "value": {
+      "text": "{\n014_body: {\n014_data: {\n01e_crypto_backend: 019_SPHINXMIX,\n01d_crypto_params: 0245_{\n018_BODY_LEN: 0130400,\n015_GROUP: 01302c9,\n01a_HEADER_LEN: 0120c0}\n,\n018_key_data: 010_,\n018_key_type: 012012,\n014_name: 01a_testmixnet,\n016_owners: [\n{\n01c_owner_key_id: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d}\n]\n,\n017_peer_id: 010_,\n016_status: 015_READY}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 014_peer}\n}\n,\n014_meta: {\n016_accept: 01100,\n0213_next_negotiation_id: 022b_6yLnC25iJlbao3D7NZ1c3Gnz0sbc52hY3qPzbsDg7-o}\n}\n", 
+      "latest": true, 
+      "signature": "{\n016_public: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n011_r: 0238_A1F6FF737E120CB0312849E78508C73807FE04AAA27BAA3A1D36F57B,\n011_s: 0238_F7EE30B08F523B8E0D29D5D4C49B9860F8E4106009F60E0581D5F11E}\n", 
+      "id": 2, 
+      "signer_key_id": "031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d"
+    }, 
+    "title": "JOIN_COORD_INITIAL_CONTRIBUTION"
+  }, 
+  "NEXT_NEGOTIATION_ID": {
+    "description": null, 
+    "value": "gAINf5C6ZVhUJe44NAQVDyPPxlGLD4p7ggfHYjHwRQw", 
+    "title": "NEXT_NEGOTIATION_ID"
+  }, 
+  "JOIN_CRYPTO_BACKEND": {
+    "description": null, 
+    "value": "panoramix.backends.sphinxmix_backend", 
+    "title": "JOIN_CRYPTO_BACKEND"
+  }, 
+  "CRYPTO_BACKEND": {
+    "description": null, 
+    "value": "panoramix.backends.sphinxmix_backend", 
+    "title": "CRYPTO_BACKEND"
+  }, 
+  "JOIN_CRYPTO_PARAMS": {
+    "description": null, 
+    "value": {
+      "BODY_LEN": 1024, 
+      "GROUP": 713, 
+      "HEADER_LEN": 192
+    }, 
+    "title": "JOIN_CRYPTO_PARAMS"
+  }, 
+  "CRYPTO_PARAMS": {
+    "description": null, 
+    "value": {
+      "BODY_LEN": 1024, 
+      "GROUP": 713, 
+      "HEADER_LEN": 192
+    }, 
+    "title": "CRYPTO_PARAMS"
+  }, 
+  "KEY": {
+    "description": null, 
+    "value": {
+      "SECRET": "06890E8D24AE91CE094FE118C3CFBA2D7BC2546A5321A0C7D609C693", 
+      "PUBLIC": "03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978"
+    }, 
+    "title": "KEY"
+  }, 
+  "PEER_NAME": {
+    "description": null, 
+    "value": "contributor", 
+    "title": "PEER_NAME"
+  }, 
+  "PEER_ID": {
+    "description": null, 
+    "value": "03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978", 
+    "title": "PEER_ID"
+  }, 
+  "JOIN_CONTRIBUTION_ID": {
+    "description": null, 
+    "value": 4, 
+    "title": "JOIN_CONTRIBUTION_ID"
+  }, 
+  "JOIN_COORD_SECOND_CONTRIBUTION": {
+    "description": null, 
+    "value": {
+      "text": "{\n014_body: {\n014_data: {\n01e_crypto_backend: 019_SPHINXMIX,\n01d_crypto_params: 0245_{\n018_BODY_LEN: 0130400,\n015_GROUP: 01302c9,\n01a_HEADER_LEN: 0120c0}\n,\n018_key_data: 023a_03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a,\n018_key_type: 012012,\n014_name: 01a_testmixnet,\n016_owners: [\n{\n01c_owner_key_id: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d}\n,\n{\n01c_owner_key_id: 023a_03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978}\n]\n,\n017_peer_id: 023a_03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a,\n016_status: 015_READY}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 014_peer}\n}\n,\n014_meta: {\n016_accept: 01101,\n0213_next_negotiation_id: 0240_c898a9c6f633fba0d3b43dcfa29e7cbcd3de2e9fa12c6e3923d5201f760c0281}\n}\n", 
+      "latest": true, 
+      "signature": "{\n016_public: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n011_r: 0238_B642B87280177DB89B5DD9BC133E5B0E7CAF53D23A004354473A18B5,\n011_s: 0238_028AF4B39E57CE015E2A19F9D951C45CC1413808FE72F7719B5D6F82}\n", 
+      "id": 5, 
+      "signer_key_id": "031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d"
+    }, 
+    "title": "JOIN_COORD_SECOND_CONTRIBUTION"
+  }, 
+  "JOIN_SECOND_CONTRIBUTION_ID": {
+    "description": null, 
+    "value": 6, 
+    "title": "JOIN_SECOND_CONTRIBUTION_ID"
+  }, 
+  "JOIN_FINISHED_NEGOTIATION": {
+    "description": null, 
+    "value": {
+      "status": "DONE", 
+      "timestamp": "2018-01-26T12:56:17.216991", 
+      "consensus": "a4967f91c99f3effe2b833a0e1a64705df05cc86cf60ae32e864b007f04e60db", 
+      "signings": [
+        {
+          "signature": "{\n016_public: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n011_r: 0238_B642B87280177DB89B5DD9BC133E5B0E7CAF53D23A004354473A18B5,\n011_s: 0238_028AF4B39E57CE015E2A19F9D951C45CC1413808FE72F7719B5D6F82}\n", 
+          "signer_key_id": "031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d"
+        }, 
+        {
+          "signature": "{\n016_public: 023a_03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978,\n011_r: 0238_FE5B1A77476065AE9E7D514FEEE72AD2886FB4DE4663A4C199D16467,\n011_s: 0238_F1086BD6171751F96020367B8E0E22262C7FD1E8590C79342E9430DF}\n", 
+          "signer_key_id": "03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978"
+        }
+      ], 
+      "text": "{\n014_body: {\n014_data: {\n01e_crypto_backend: 019_SPHINXMIX,\n01d_crypto_params: 0245_{\n018_BODY_LEN: 0130400,\n015_GROUP: 01302c9,\n01a_HEADER_LEN: 0120c0}\n,\n018_key_data: 023a_03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a,\n018_key_type: 012012,\n014_name: 01a_testmixnet,\n016_owners: [\n{\n01c_owner_key_id: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d}\n,\n{\n01c_owner_key_id: 023a_03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978}\n]\n,\n017_peer_id: 023a_03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a,\n016_status: 015_READY}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 014_peer}\n}\n,\n014_meta: {\n016_accept: 01101,\n0213_next_negotiation_id: 0240_c898a9c6f633fba0d3b43dcfa29e7cbcd3de2e9fa12c6e3923d5201f760c0281}\n}\n", 
+      "id": "0219LesdJZaJn7petlp-JswQN-LRwT9YnqT9wMWr8tc"
+    }, 
+    "title": "JOIN_FINISHED_NEGOTIATION"
+  }, 
+  "COMBINED_PEER_ID": {
+    "description": null, 
+    "value": "03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a", 
+    "title": "COMBINED_PEER_ID"
+  }, 
+  "CYCLE": {
+    "description": null, 
+    "value": 1, 
+    "title": "CYCLE"
+  }, 
+  "EP_NEGOTIATION_ID_1": {
+    "description": null, 
+    "value": "6yLnC25iJlbao3D7NZ1c3Gnz0sbc52hY3qPzbsDg7-o", 
+    "title": "EP_NEGOTIATION_ID_1"
+  }, 
+  "EP_COORD_INITIAL_CONTRIBUTION_1": {
+    "description": null, 
+    "value": {
+      "text": "{\n014_body: [\n{\n014_data: {\n01b_description: 0219_Gateway for mixnet 'ep_1',\n01b_endpoint_id: 014_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 0211_SPHINXMIX_GATEWAY,\n015_links: [\n{\n018_from_box: 016_OUTBOX,\n0210_from_endpoint_id: 0213_03d2d43_for_ep_ep_1,\n016_to_box: 01a_PROCESSBOX}\n]\n,\n017_peer_id: 023a_03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a,\n016_public: 01101,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n,\n{\n014_data: {\n01b_description: 0216_Mixing node for 'ep_1',\n01b_endpoint_id: 0213_031c6b5_for_ep_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 019_SPHINXMIX,\n015_links: [\n{\n018_from_box: 018_ACCEPTED,\n0210_from_endpoint_id: 014_ep_1,\n016_to_box: 015_INBOX}\n]\n,\n017_peer_id: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n016_public: 01100,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n,\n{\n014_data: {\n01b_description: 0216_Mixing node for 'ep_1',\n01b_endpoint_id: 0213_03d2d43_for_ep_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 019_SPHINXMIX,\n015_links: [\n{\n018_from_box: 016_OUTBOX,\n0210_from_endpoint_id: 0213_031c6b5_for_ep_ep_1,\n016_to_box: 015_INBOX}\n]\n,\n017_peer_id: 023a_03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978,\n016_public: 01100,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n]\n,\n014_meta: {\n016_accept: 01100,\n0213_next_negotiation_id: 022b_gAINf5C6ZVhUJe44NAQVDyPPxlGLD4p7ggfHYjHwRQw}\n}\n", 
+      "latest": true, 
+      "signature": "{\n016_public: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n011_r: 0238_A8DD879BCB877A9DFBDD4AF6AEF50F597B63C75C9EEF29CBB79BBFE4,\n011_s: 0238_8F2AC691284F65D92B6E1B39697BFD240E901F9E85251D389BA3ABF4}\n", 
+      "id": 7, 
+      "signer_key_id": "031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d"
+    }, 
+    "title": "EP_COORD_INITIAL_CONTRIBUTION_1"
+  }, 
+  "EP_CONTRIBUTION_1": {
+    "description": null, 
+    "value": {
+      "text": "{\n014_body: [\n{\n014_data: {\n01b_description: 0219_Gateway for mixnet 'ep_1',\n01b_endpoint_id: 014_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 0211_SPHINXMIX_GATEWAY,\n015_links: [\n{\n018_from_box: 016_OUTBOX,\n0210_from_endpoint_id: 0213_03d2d43_for_ep_ep_1,\n016_to_box: 01a_PROCESSBOX}\n]\n,\n017_peer_id: 023a_03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a,\n016_public: 01101,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n,\n{\n014_data: {\n01b_description: 0216_Mixing node for 'ep_1',\n01b_endpoint_id: 0213_031c6b5_for_ep_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 019_SPHINXMIX,\n015_links: [\n{\n018_from_box: 018_ACCEPTED,\n0210_from_endpoint_id: 014_ep_1,\n016_to_box: 015_INBOX}\n]\n,\n017_peer_id: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n016_public: 01100,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n,\n{\n014_data: {\n01b_description: 0216_Mixing node for 'ep_1',\n01b_endpoint_id: 0213_03d2d43_for_ep_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 019_SPHINXMIX,\n015_links: [\n{\n018_from_box: 016_OUTBOX,\n0210_from_endpoint_id: 0213_031c6b5_for_ep_ep_1,\n016_to_box: 015_INBOX}\n]\n,\n017_peer_id: 023a_03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978,\n016_public: 01100,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n]\n,\n014_meta: {\n016_accept: 01100}\n}\n", 
+      "latest": true, 
+      "signature": "{\n016_public: 023a_03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978,\n011_r: 0238_ACCCD7A95634992C50B7C665CE2E3412818785C9AA33AD1C153DDDDE,\n011_s: 0238_648DEC7FD7898F0D97BBD799B19D16D1837F700649D0BA8A93ABB374}\n", 
+      "id": 8, 
+      "signer_key_id": "03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978"
+    }, 
+    "title": "EP_CONTRIBUTION_1"
+  }, 
+  "EP_COORD_SECOND_CONTRIBUTION_1": {
+    "description": null, 
+    "value": {
+      "text": "{\n014_body: [\n{\n014_data: {\n01b_description: 0219_Gateway for mixnet 'ep_1',\n01b_endpoint_id: 014_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 0211_SPHINXMIX_GATEWAY,\n015_links: [\n{\n018_from_box: 016_OUTBOX,\n0210_from_endpoint_id: 0213_03d2d43_for_ep_ep_1,\n016_to_box: 01a_PROCESSBOX}\n]\n,\n017_peer_id: 023a_03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a,\n016_public: 01101,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n,\n{\n014_data: {\n01b_description: 0216_Mixing node for 'ep_1',\n01b_endpoint_id: 0213_031c6b5_for_ep_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 019_SPHINXMIX,\n015_links: [\n{\n018_from_box: 018_ACCEPTED,\n0210_from_endpoint_id: 014_ep_1,\n016_to_box: 015_INBOX}\n]\n,\n017_peer_id: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n016_public: 01100,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n,\n{\n014_data: {\n01b_description: 0216_Mixing node for 'ep_1',\n01b_endpoint_id: 0213_03d2d43_for_ep_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 019_SPHINXMIX,\n015_links: [\n{\n018_from_box: 016_OUTBOX,\n0210_from_endpoint_id: 0213_031c6b5_for_ep_ep_1,\n016_to_box: 015_INBOX}\n]\n,\n017_peer_id: 023a_03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978,\n016_public: 01100,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n]\n,\n014_meta: {\n016_accept: 01101,\n0213_next_negotiation_id: 0240_92b00f57166922ec3057400ccd961fdfb8b60b676703933725ca18769f3469ea}\n}\n", 
+      "latest": true, 
+      "signature": "{\n016_public: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n011_r: 0238_EEEB62510EF89F17552AE90D2B54B440C958CB79D603C76028A16A85,\n011_s: 0238_D3FB85CC74ABE8F2F5E049DDC09296A6F96E157BF17F31AB51E65B07}\n", 
+      "id": 9, 
+      "signer_key_id": "031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d"
+    }, 
+    "title": "EP_COORD_SECOND_CONTRIBUTION_1"
+  }, 
+  "EP_SECOND_CONTRIBUTION_ID_1": {
+    "description": null, 
+    "value": 10, 
+    "title": "EP_SECOND_CONTRIBUTION_ID_1"
+  }, 
+  "EP_FINISHED_NEGOTIATION_1": {
+    "description": null, 
+    "value": {
+      "status": "DONE", 
+      "timestamp": "2018-01-26T12:56:30.925664", 
+      "consensus": "cb6100e3bf4dc8de6ab847c649c5ea11616f285d27681f1d7b226a49ae41ff9a", 
+      "signings": [
+        {
+          "signature": "{\n016_public: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n011_r: 0238_EEEB62510EF89F17552AE90D2B54B440C958CB79D603C76028A16A85,\n011_s: 0238_D3FB85CC74ABE8F2F5E049DDC09296A6F96E157BF17F31AB51E65B07}\n", 
+          "signer_key_id": "031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d"
+        }, 
+        {
+          "signature": "{\n016_public: 023a_03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978,\n011_r: 0238_28A7B3805C39F536B8228F8CEB8874A95FE80343772EDAB1F002945F,\n011_s: 0238_0250B68E7A008F732FD66B7BE1BB0A24CB867A28175C4BE8E766185F}\n", 
+          "signer_key_id": "03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978"
+        }
+      ], 
+      "text": "{\n014_body: [\n{\n014_data: {\n01b_description: 0219_Gateway for mixnet 'ep_1',\n01b_endpoint_id: 014_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 0211_SPHINXMIX_GATEWAY,\n015_links: [\n{\n018_from_box: 016_OUTBOX,\n0210_from_endpoint_id: 0213_03d2d43_for_ep_ep_1,\n016_to_box: 01a_PROCESSBOX}\n]\n,\n017_peer_id: 023a_03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a,\n016_public: 01101,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n,\n{\n014_data: {\n01b_description: 0216_Mixing node for 'ep_1',\n01b_endpoint_id: 0213_031c6b5_for_ep_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 019_SPHINXMIX,\n015_links: [\n{\n018_from_box: 018_ACCEPTED,\n0210_from_endpoint_id: 014_ep_1,\n016_to_box: 015_INBOX}\n]\n,\n017_peer_id: 023a_031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d,\n016_public: 01100,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n,\n{\n014_data: {\n01b_description: 0216_Mixing node for 'ep_1',\n01b_endpoint_id: 0213_03d2d43_for_ep_ep_1,\n01f_endpoint_params: 014_{\n}\n,\n01d_endpoint_type: 019_SPHINXMIX,\n015_links: [\n{\n018_from_box: 016_OUTBOX,\n0210_from_endpoint_id: 0213_031c6b5_for_ep_ep_1,\n016_to_box: 015_INBOX}\n]\n,\n017_peer_id: 023a_03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978,\n016_public: 01100,\n018_size_max: 012064,\n018_size_min: 012064,\n016_status: 014_OPEN}\n,\n014_info: {\n019_operation: 016_create,\n018_resource: 018_endpoint}\n}\n]\n,\n014_meta: {\n016_accept: 01101,\n0213_next_negotiation_id: 0240_92b00f57166922ec3057400ccd961fdfb8b60b676703933725ca18769f3469ea}\n}\n", 
+      "id": "6yLnC25iJlbao3D7NZ1c3Gnz0sbc52hY3qPzbsDg7-o"
+    }, 
+    "title": "EP_FINISHED_NEGOTIATION_1"
+  }, 
+  "EP_COMBINED_ID_1": {
+    "description": null, 
+    "value": [
+      {
+        "status": "OPEN", 
+        "description": "Gateway for mixnet 'ep_1'", 
+        "links": [
+          {
+            "to_box": "PROCESSBOX", 
+            "from_endpoint_id": "03d2d43_for_ep_ep_1", 
+            "from_box": "OUTBOX"
+          }
+        ], 
+        "endpoint_params": "{\n}\n", 
+        "size_max": 100, 
+        "size_min": 100, 
+        "endpoint_type": "SPHINXMIX_GATEWAY", 
+        "endpoint_id": "ep_1", 
+        "peer_id": "03db9d5a02b1ebc616e06bd2efebd9f183280e71022b4e6033a55d932a", 
+        "public": 1
+      }, 
+      {
+        "status": "OPEN", 
+        "description": "Mixing node for 'ep_1'", 
+        "links": [
+          {
+            "to_box": "INBOX", 
+            "from_endpoint_id": "ep_1", 
+            "from_box": "ACCEPTED"
+          }
+        ], 
+        "endpoint_params": "{\n}\n", 
+        "size_max": 100, 
+        "size_min": 100, 
+        "endpoint_type": "SPHINXMIX", 
+        "endpoint_id": "031c6b5_for_ep_ep_1", 
+        "peer_id": "031c6b5fc1febda18327964d41fc094a9ff7d450dd51ce573136d2df2d", 
+        "public": 0
+      }, 
+      {
+        "status": "OPEN", 
+        "description": "Mixing node for 'ep_1'", 
+        "links": [
+          {
+            "to_box": "INBOX", 
+            "from_endpoint_id": "031c6b5_for_ep_ep_1", 
+            "from_box": "OUTBOX"
+          }
+        ], 
+        "endpoint_params": "{\n}\n", 
+        "size_max": 100, 
+        "size_min": 100, 
+        "endpoint_type": "SPHINXMIX", 
+        "endpoint_id": "03d2d43_for_ep_ep_1", 
+        "peer_id": "03d2d43069eb37e15679ea35702b5b652d53cdddc997b439ad3a0ed978", 
+        "public": 0
+      }
+    ], 
+    "title": "EP_COMBINED_ID_1"
+  }, 
+  "CLOSE_NEGOTIATION_ID_ep_1": {
+    "description": null, 
+    "value": "gAINf5C6ZVhUJe44NAQVDyPPxlGLD4p7ggfHYjHwRQw", 
+    "title": "CLOSE_NEGOTIATION_ID_ep_1"
+  }
+}
