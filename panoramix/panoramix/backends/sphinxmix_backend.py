@@ -1,6 +1,6 @@
 from binascii import unhexlify
 import base64
-from hashlib import sha1
+from hashlib import sha256
 
 from petlib import ecdsa, ec, bn
 from sphinxmix import SphinxParams, SphinxClient, SphinxNode
@@ -99,7 +99,7 @@ def get_key_id_from_key_data(key_data):
 
 
 def sign(body, params, secret, public):
-    digest = sha1(body).digest()
+    digest = sha256(body).digest()
     sig = ecdsa.do_ecdsa_sign(params.group.G, secret, digest)
     sig = tuple(map(bn_encode, sig))
     signature = {
@@ -112,7 +112,7 @@ def sign(body, params, secret, public):
 
 def verify(mixnet_data, signature, params):
     signature = canonical.from_unicode_canonical(signature)
-    digest = sha1(mixnet_data).digest()
+    digest = sha256(mixnet_data).digest()
     sig = tuple(map(bn_decode, (signature["r"], signature["s"])))
     ver_key = mk_EcPt(signature["public"], params)
     valid = ecdsa.do_ecdsa_verify(params.group.G, ver_key, sig, digest)
