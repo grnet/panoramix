@@ -2,25 +2,38 @@ Example setup of a sphinxmix mixnet
 ===================================
 
 For a minimal setup, let's consider four players: the server, two sphinxmix
-contributors and an end user. We will run each one in a terminal with their
-own configuration: set environment variable PANORAMIX_CONFIG to some
-different file in each terminal.
+contributors and an end user.
 
-Run panoramix-server-wizard, just press Enter for defaults and follow
-instructions to setup the server.
+Start the server with:
 
-Run two instances of panoramix-wizard. Choose role 'create' for the first
-and 'join' for the second.
+  PANORAMIX_DATABASE=<db_file_path> panoramix-manage migrate
+  PANORAMIX_DATABASE=<db_file_path> panoramix-manage runserver --nothreading
 
-Select to create one invitation at the 'create' wizard and pass the value on
-to the join wizard.
 
-After you setup everything, you will reach something like:
+We will run the mixers and the end user in a terminal with their own
+configuration: set environment variable PANORAMIX_CONFIG to some different
+file in each terminal.
 
-  Ready to accept messages to mixnet http://127.0.0.1:8000/panoramix/endpoints/<endpoint_name>/
+Run two instances of panoramix-wizard. Choose role 'admin' for the first
+and 'contrib' for the second.
+
+The admin must specify the list of mixers, the name of the mixnet, and the
+min size of each mixing cycle.
+
+The admin configures the mixnet setting up all related endpoints. The mixnet
+waits for input at the endpoint:
+
+  http://127.0.0.1:8000/panoramix/endpoints/<mixnet_name>/
+
+and outputs the mixed messages at the endpoint:
+
+  http://127.0.0.1:8000/panoramix/endpoints/<mixnet_name>_output/
+
+Upon configuring mixnet name and min size, the contributor is also ready to
+operate their mix.
 
 You have set up a sphinxmix network with two mixes, in a static
-configuration (sorted alphabetically).
+configuration.
 
 Then run sphimxmix-agent and initialize it with the mixnet URL. In another
 terminal with the same PANORAMIX_CONFIG as the agent, run panoramix-client
@@ -30,16 +43,17 @@ You can choose any string as recipient. After you send SIZE_MIN messages,
 you can notice at the wizard terminals that the messages are being
 processed.
 
+Mixing is done in cycles. Messages that arrive at the input endpoint are
+marked with the current cycle. After the required number of messages is
+collected, the mixnet admin marks the cycle as ready for mixing and starts a
+new cycle. Similarly, mixers process the messages in their respective cycles.
+
 Messages are not actually sent to a recipient, but you can review the mixnet
 output with:
 
-  panoramix outbox list --endpoint-id <endpoint_name>
+  panoramix-client --output <cycle_id>
 
-You can also use the panoramix API client to view the (encrypted) input of
-the mixnet with:
+You can then acknowledge retrieving the messages, so that the mixnet can
+safely delete them.
 
-  panoramix accepted list --endpoint-id <endpoint_name>
-
-or view all mixnet endpoints with:
-
-  panoramix endpoint list
+  panoramix-client --ack <cycle_id>

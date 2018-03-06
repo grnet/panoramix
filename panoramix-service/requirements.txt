@@ -1,0 +1,1 @@
+apimas-django>=0.4a2,<0.5

@@ -3,7 +3,7 @@ import os
 
 CURPATH = os.path.dirname(os.path.realpath(__file__))
 
-PACKAGE_NAME = "panoramix-server"
+PACKAGE_NAME = "panoramix-service"
 SHORT_DESCRIPTION = "The Panoramix Project"
 
 version_file = os.path.join(CURPATH, "..", "version.txt")
@@ -55,7 +55,6 @@ setup(
     classifiers=CLASSIFIERS,
     packages=PACKAGES,
     package_dir={'': PACKAGES_ROOT},
-    namespace_packages=['panoramix'],
     zip_safe=False,
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRES,
@@ -64,7 +63,6 @@ setup(
     entry_points={
         'console_scripts': [
             'panoramix-manage = panoramix_django.manage:main',
-            'panoramix-server-wizard = panoramix.server.server_wizard:main',
         ],
     },
 )

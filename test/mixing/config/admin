@@ -25,35 +25,43 @@
   "KEY": {
     "description": null, 
     "value": {
-      "SECRET": "092C292771AD2CE61DA8A016BF911972D3CB27B8ECAE7F0C36D7B54D", 
-      "PUBLIC": "02ee59077b3250b34acf06050ba64e7bd15a387268adbcf2b823156dce"
+      "SECRET": "325921CCF6B843DDD62D36FB14B8300605158C496F82B9B2E10A0DA8", 
+      "PUBLIC": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12"
     }, 
     "title": "KEY"
   }, 
   "PEER_NAME": {
     "description": null, 
-    "value": "p2", 
+    "value": "p1", 
     "title": "PEER_NAME"
   }, 
   "PEER_ID": {
     "description": null, 
-    "value": "02ee59077b3250b34acf06050ba64e7bd15a387268adbcf2b823156dce", 
+    "value": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
     "title": "PEER_ID"
   }, 
   "SETUP_ROLE": {
     "description": null, 
-    "value": "contrib", 
+    "value": "admin", 
     "title": "SETUP_ROLE"
   }, 
-  "MIXNET_NAME": {
+  "MIXERS_LIST": {
     "description": null, 
-    "value": "mixep", 
-    "title": "MIXNET_NAME"
+    "value": [
+      "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
+      "02ee59077b3250b34acf06050ba64e7bd15a387268adbcf2b823156dce"
+    ], 
+    "title": "MIXERS_LIST"
   }, 
   "MIXNET_PEER": {
     "description": null, 
     "value": "033fc6104d0f58a6e446383059de146b56792d05b88e3466ddfe787138", 
     "title": "MIXNET_PEER"
+  }, 
+  "MIXNET_NAME": {
+    "description": null, 
+    "value": "mixep", 
+    "title": "MIXNET_NAME"
   }, 
   "MIN_SIZE": {
     "description": null, 
@@ -94,7 +102,7 @@
       "input": {
         "description": "Gateway for mixnet 'mixep'", 
         "endpoint_params": "{\n}\n", 
-        "admin": "admin", 
+        "admin": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
         "endpoint_type": "SPHINXMIX_GATEWAY", 
         "endpoint_id": "mixep", 
         "peer_id": "033fc6104d0f58a6e446383059de146b56792d05b88e3466ddfe787138", 
@@ -110,11 +118,31 @@
         "description": "Output of mixnet 'mixep'", 
         "endpoint_id": "mixep_output", 
         "endpoint_params": "{\n}\n", 
-        "admin": "admin", 
+        "admin": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
         "peer_id": "033fc6104d0f58a6e446383059de146b56792d05b88e3466ddfe787138", 
         "public": true
       }
     }, 
     "title": "MIXNET_SPEC"
+  }, 
+  "ENDPOINT_02ee590_for_ep_mixep": {
+    "description": null, 
+    "value": true, 
+    "title": "ENDPOINT_02ee590_for_ep_mixep"
+  }, 
+  "ENDPOINT_02a9e4f_for_ep_mixep": {
+    "description": null, 
+    "value": true, 
+    "title": "ENDPOINT_02a9e4f_for_ep_mixep"
+  }, 
+  "ENDPOINT_mixep": {
+    "description": null, 
+    "value": true, 
+    "title": "ENDPOINT_mixep"
+  }, 
+  "ENDPOINT_mixep_output": {
+    "description": null, 
+    "value": true, 
+    "title": "ENDPOINT_mixep_output"
   }
 }

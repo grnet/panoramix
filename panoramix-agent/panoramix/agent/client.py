@@ -1,6 +1,8 @@
-from panoramix.wizard_common import abort, ui, cfg, on
-from panoramix import wizard_common as common
+from panoramix.config import cfg
+from panoramix.common import ui, config_file, SphinxmixClient
 import requests
+import argparse
+
 
 AGENT_ADDRESS = "http://127.0.0.1:5000"
 SEND_ADDRESS = requests.compat.urljoin(AGENT_ADDRESS, "send")
@@ -21,12 +23,41 @@ def send_message(text=None, recipient=None):
     ui.inform("Sent message with id %s" % r.content)
 
 
-def main(text=None, recipient=None):
-    import os
+def output_cycle(cycle):
+    client = SphinxmixClient()
+    client.register_catalog_url(cfg.get('CATALOG_URL'))
+    output_endpoint_id = '%s_output' % cfg.get('ENDPOINT_ID')
+    messages = client.messages_list(output_endpoint_id, cycle=cycle)
+    ui.inform(messages)
+
+
+def ack_cycle(cycle):
+    client = SphinxmixClient()
+    client.register_catalog_url(cfg.get('CATALOG_URL'))
+    output_endpoint_id = '%s_output' % cfg.get('ENDPOINT_ID')
+    r = client.cycle_set_state(output_endpoint_id, cycle, 'ACK')
+    ui.inform(r)
+
+
+parser = argparse.ArgumentParser(description='Panoramix client')
+parser.add_argument('--output', metavar='CYCLE', type=int,
+                    help='Print output of CYCLE')
+parser.add_argument('--ack', metavar='CYCLE', type=int,
+                    help='Acknowledge output of CYCLE')
+
+
+def main():
     ui.inform("Welcome to Panoramix client!")
-    ui.inform("Configuration file is: %s" % common.config_file)
+    ui.inform("Configuration file is: %s" % config_file)
     ui.inform("Set PANORAMIX_CONFIG environment variable to override")
-    send_message(text=text, recipient=recipient)
+    args = parser.parse_args()
+    if args.output is None and args.ack is None:
+        send_message(text=text, recipient=recipient)
+        return
+    if args.output is not None:
+        output_cycle(args.output)
+    if args.ack is not None:
+        ack_cycle(args.ack)
 
 
 if __name__ == "__main__":

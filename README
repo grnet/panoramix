@@ -7,7 +7,7 @@ Overview
 This repository includes three python packages:
 
   * panoramix: The main package that implements the mixnet logic
-  * panoramix-server: A server implementing the panoramix API
+  * panoramix-service: A server implementing the panoramix API
   * panoramix-agent: A local agent
 
 
@@ -28,8 +28,7 @@ dependencies with:
 Usage
 -----
 
-The panoramix-server package provides a wizard (panoramix-server-wizard) to
-facilitate the setup of the server.
+The service can be run with `panoramix-manage runserver --nothreading`.
 
 The panoramix package provides a wizard (panoramix-wizard) to allow the
 mixnet contributors to set up a mixnet (currently works with the sphinxmix

@@ -23,51 +23,66 @@ def mk_contributing_endpoint_id(peer_id, mixnet_id):
 def compute_input_from(for_peer_id, owners, combined_endpoint_id):
     index = owners.index(for_peer_id)
     if index == 0:
-        return combined_endpoint_id, "ACCEPTED"
+        return combined_endpoint_id
     previous = mk_contributing_endpoint_id(
         owners[index - 1], combined_endpoint_id)
-    return previous, "OUTBOX"
+    return previous
 
 
-def make_description(mixnet_name, combined_peer_id, owners,
-                     size_min, size_max):
-    owners = sorted(owners)
-    link = {"from_endpoint_id":
-            mk_contributing_endpoint_id(owners[-1], mixnet_name),
-            "from_box": "OUTBOX",
-            "to_box": "PROCESSBOX"}
+def make_description(mixnet_name, combined_peer_id, owners, admin, size_min):
     endpoint_params = canonical.to_canonical({})
-    gateway = {
+    in_endpoint = {
         "endpoint_id": mixnet_name,
         "peer_id": combined_peer_id,
         "endpoint_type": "SPHINXMIX_GATEWAY",
         "endpoint_params": endpoint_params,
-        "description": "Gateway for mixnet '%s'" % mixnet_name,
         "public": True,
-        "links": [link],
-        "size_min": size_min,
-        "size_max": size_max,
+        "description": "Gateway for mixnet '%s'" % mixnet_name,
+        "admin": admin,
     }
-    endpoints = [gateway]
+
+    link = {
+        "from_endpoint_id": mk_contributing_endpoint_id(owners[-1], mixnet_name),
+        "from_state": 'ACCEPTED',
+    }
+    out_endpoint = {
+        "endpoint_id": mixnet_name + '_output',
+        "peer_id": combined_peer_id,
+        "endpoint_type": "SPHINXMIX_OUTPUT",
+        "endpoint_params": endpoint_params,
+        "public": True,
+        "description": "Output of mixnet '%s'" % mixnet_name,
+        "link": link,
+        "admin": admin,
+    }
+
+    mix_endpoints = {}
     for peer_id in owners:
         endpoint_id = mk_contributing_endpoint_id(peer_id, mixnet_name)
-        from_endpoint, from_box = compute_input_from(
+        from_endpoint = compute_input_from(
             peer_id, owners, mixnet_name)
-        link = {"from_endpoint_id": from_endpoint,
-                "from_box": from_box,
-                "to_box": "INBOX"}
-        endpoints.append({
+        link = {
+            "from_endpoint_id": from_endpoint,
+            "from_state": 'ACCEPTED',
+        }
+        mix_endpoints[peer_id] = {
             "endpoint_id": endpoint_id,
             "peer_id": peer_id,
             "endpoint_type": "SPHINXMIX",
             "endpoint_params": endpoint_params,
             "description": "Mixing node for '%s'" % mixnet_name,
             "public": False,
-            "links": [link],
-            "size_min": size_min,
-            "size_max": size_max,
-        })
-    return endpoints
+            "link": link,
+            "admin": peer_id,
+        }
+
+    spec = {
+        'input': in_endpoint,
+        'output': out_endpoint,
+        'mix_endpoints': mix_endpoints,
+        'size_min': size_min,
+    }
+    return spec
 
 
 REQUIRED_PARAMS = {}
@@ -234,6 +249,7 @@ class SphinxmixMixnet(interface.Mixnet):
 
 
 mixnet_class = SphinxmixMixnet
+key_type = 18
 
 
 class Client(object):
@@ -281,24 +297,22 @@ class Client(object):
     def encrypt(self, data, recipients):
         return encrypt(data, recipients, self.params)
 
-    def decide_route(self, mixnet, recipient):
-        owners = mixnet.owners
-        return owners + [recipient]
+    def decide_route(self, mixers, recipient):
+        return mixers + [recipient]
 
-    def prepare_message(self, mixnet, recipient, message):
-        assert isinstance(mixnet, SphinxmixMixnet)
-        route = self.decide_route(mixnet, recipient)
+    def prepare_message(self, mixnet_peer, mixers, recipient, message):
+        route = self.decide_route(mixers, recipient)
         enc_data = self.encrypt(message, route)
         sender = self.get_keyid()
-        return interface.Message(sender,
-                                 mixnet.mixnet_peer["peer_id"],
-                                 enc_data)
+        return {'sender': sender, 'recipient': mixnet_peer, 'text': enc_data}
 
     def process(self, endpoint, messages):
         endpoint_type = endpoint["endpoint_type"]
         if endpoint_type == "SPHINXMIX":
             return process_sphinxmix(messages, self.params, self.secret)
         if endpoint_type == "SPHINXMIX_GATEWAY":
+            raise utils.NoProcessing(endpoint_type)
+        if endpoint_type == "SPHINXMIX_OUTPUT":
             raise utils.NoProcessing(endpoint_type)
         raise ValueError("Unsupported endpoint type")
 

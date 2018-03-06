@@ -1,6 +1,6 @@
 import datetime
 import time
-from panoramix import client
+from panoramix.common import SphinxmixClient
 from panoramix.canonical import from_unicode_canonical
 from panoramix.agent import client as end_user
 from panoramix.config import cfg
@@ -17,22 +17,20 @@ t_start = datetime.datetime.now()
 
 mixnet_url = cfg.get('MIXNET_URL').rstrip('/')
 endpoint_prefix, endpoint_id = mixnet_url.rsplit('/', 1)
+out_endpoint_id = '%s_output' % endpoint_id
+
 
 def init_client():
-    panoramix_client = client.PanoramixClient()
+    panoramix_client = SphinxmixClient()
     catalog_url = cfg.get("CATALOG_URL")
     panoramix_client.register_catalog_url(catalog_url)
-    backend = cfg.get("CRYPTO_BACKEND")
-    panoramix_client.register_backend(backend)
     panoramix_client.register_crypto_client(cfg)
-    mixnet_description = cfg.get("MIXNET_DESCRIPTION")
-    panoramix_client.register_mixnet(mixnet_description)
     return panoramix_client
 
 panoramix_client = init_client()
 
 while True:
-    outbox = panoramix_client.box_list(endpoint_id, client.OUTBOX)
+    outbox = panoramix_client.messages_list(out_endpoint_id)
     if outbox:
         print "Found outbox, checking..."
         outbox_messages = [

@@ -7,15 +7,12 @@ cd "$(dirname "$0")"
 rm -rf ${WORKSPACE}
 cp -r config ${WORKSPACE}
 
-export PANORAMIX_DATABASE=${WORKSPACE}/panoramix_db.sqlite3
+./run-service.sh &
+sleep 10
 
-PANORAMIX_CONFIG=${WORKSPACE}/server panoramix-manage runserver 127.0.0.1:8000 &
-sleep 3
-
-PANORAMIX_CONFIG=${WORKSPACE}/coordinator panoramix-wizard &
-PANORAMIX_CONFIG=${WORKSPACE}/contributor panoramix-wizard &
-
-PANORAMIX_CONFIG=${WORKSPACE}/client sphinxmix-agent &
+./run-admin.sh &
+./run-contrib.sh &
+./run-client-daemon.sh &
 sleep 3
 
 PANORAMIX_CONFIG=${WORKSPACE}/client python mixing.py

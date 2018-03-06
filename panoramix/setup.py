@@ -61,7 +61,6 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'panoramix = panoramix.cli:main',
             'panoramix-wizard = panoramix.wizard:main',
         ],
     },
