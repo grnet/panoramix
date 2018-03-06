@@ -1,3 +1,4 @@
+import datetime
 import time
 from panoramix import client
 from panoramix.canonical import from_unicode_canonical
@@ -12,6 +13,7 @@ for message in messages:
     end_user.send_message(text=message[0], recipient=message[1])
 print "Sent messages"
 
+t_start = datetime.datetime.now()
 
 mixnet_url = cfg.get('MIXNET_URL').rstrip('/')
 endpoint_prefix, endpoint_id = mixnet_url.rsplit('/', 1)
@@ -45,4 +47,7 @@ while True:
         break
     else:
         print "Outbox not ready yet..."
-        time.sleep(3)
+        time.sleep(1)
+
+t_end = datetime.datetime.now()
+print "Time elapsed", (t_end - t_start).total_seconds()
