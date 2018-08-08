@@ -1,27 +1,40 @@
 Example setup of a sphinxmix mixnet
 ===================================
 
-For a minimal setup, let's consider four players: the server, two sphinxmix
-contributors and an end user.
+For a minimal setup, let's consider five entities: the server, three sphinxmix
+mixers, and an end user.
 
-Start the server with:
-
+First set up the server database with:
   PANORAMIX_DATABASE=<db_file_path> panoramix-manage migrate
+
+The database will be automatically created at the location specified by the
+PANORAMIX_DATABASE environment variable.
+
+Then, start the server with:
   PANORAMIX_DATABASE=<db_file_path> panoramix-manage runserver --nothreading
 
 
-We will run the mixers and the end user in a terminal with their own
-configuration: set environment variable PANORAMIX_CONFIG to some different
-file in each terminal.
+We will run the mixers and the end user in separate terminals, each with
+its own configuration: set environment variable PANORAMIX_CONFIG to some
+different file in each terminal.
 
-Run two instances of panoramix-wizard. Choose role 'admin' for the first
-and 'contrib' for the second.
+Run three instances of panoramix-wizard. Choose role 'admin' for the first
+and 'contrib' for the rest. The wizards must be run interactively.
 
-The admin must specify the list of mixers, the name of the mixnet, and the
-min size of each mixing cycle.
+All three wizards set off by creating a crypto key and registering it to the
+server. The admin wizard must then collect off-line the PEER_IDs of all the
+mixers and register them (including its own):
 
-The admin configures the mixnet setting up all related endpoints. The mixnet
-waits for input at the endpoint:
+  MIXERS: PEER_ID1,PEER_ID2,PEER_ID3
+
+The admin must then set the name of the mixnet, and the minimum number of
+messages per mix cycle (MIN_SIZE). This configures the mixnet, registering
+all related endpoints on the server.
+
+The contrib wizards must then enter the exact same values for the mixnet
+name and the min size as the admin.
+
+Once set up, the mixnet waits for input at the endpoint:
 
   http://127.0.0.1:8000/panoramix/endpoints/<mixnet_name>/
 
@@ -29,17 +42,15 @@ and outputs the mixed messages at the endpoint:
 
   http://127.0.0.1:8000/panoramix/endpoints/<mixnet_name>_output/
 
-Upon configuring mixnet name and min size, the contributor is also ready to
-operate their mix.
-
-You have set up a sphinxmix network with two mixes, in a static
+You have set up a sphinxmix network with three mixes, in a static
 configuration.
 
-Then run sphimxmix-agent and initialize it with the mixnet URL. In another
-terminal with the same PANORAMIX_CONFIG as the agent, run panoramix-client
-and send some messages through the mixnet.
+As for the end user, in a separate terminal with its own PANORAMIX_CONFIG
+setting, run sphimxmix-agent and initialize it with the mixnet URL mentioned
+above. In another terminal with the same PANORAMIX_CONFIG as the agent, run
+panoramix-client and send some messages through the mixnet.
 
-You can choose any string as recipient. After you send SIZE_MIN messages,
+You can choose any string as recipient. After you send MIN_SIZE messages,
 you can notice at the wizard terminals that the messages are being
 processed.
 
