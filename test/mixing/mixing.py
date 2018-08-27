@@ -1,7 +1,6 @@
 import datetime
 import time
 from panoramix.common import SphinxmixClient
-from panoramix.canonical import from_unicode_canonical
 from panoramix.agent import client as end_user
 from panoramix.config import cfg
 
@@ -34,7 +33,7 @@ while True:
     if outbox:
         print "Found outbox, checking..."
         outbox_messages = [
-            (from_unicode_canonical(msg['text']), msg['recipient'])
+            (msg['text'], msg['recipient'])
             for msg in outbox
         ]
         if messages == outbox_messages:

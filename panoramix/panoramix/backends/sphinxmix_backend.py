@@ -195,7 +195,7 @@ def route_message(info, header, delta, params):
     flag = routing[0]
     if flag == SphinxClient.Relay_flag:
         recipient = routing[1]
-        return recipient, mk_message(header, delta)
+        return recipient, encode_message(mk_message(header, delta))
     elif flag == SphinxClient.Dest_flag:
         return tuple(SphinxClient.receive_forward(params, delta))
     raise ValueError("Unrecognized flag")
@@ -210,7 +210,7 @@ def process_sphinxmix(enc_messages, params, secret):
         (tag, info, (header, delta)) = process_message(decoded, params, secret)
         recipient, processed_message = route_message(
             info, header, delta, params)
-        processed.append((recipient, encode_message(processed_message)))
+        processed.append((recipient, processed_message))
     return processed, None
 
 
