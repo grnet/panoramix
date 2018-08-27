@@ -52,7 +52,7 @@ def main():
     ui.inform("Set PANORAMIX_CONFIG environment variable to override")
     args = parser.parse_args()
     if args.output is None and args.ack is None:
-        send_message(text=text, recipient=recipient)
+        send_message()
         return
     if args.output is not None:
         output_cycle(args.output)
