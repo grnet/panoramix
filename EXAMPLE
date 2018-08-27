@@ -68,3 +68,14 @@ You can then acknowledge retrieving the messages, so that the mixnet can
 safely delete them.
 
   panoramix-client --ack <cycle_id>
+
+Cycle ids are integer serials, starting from 1.
+One can operate the client programmatically:
+
+  PANORAMIX_CONFIG=<client_config_file> python
+  > from panoramix.agent import client
+  > client.send_message(text='the text, recipient='recipient')
+  # Use text=None, recipient=None for interactive mode
+
+  > client.output_cycle(1)
+  > client.ack_cycle(1)
