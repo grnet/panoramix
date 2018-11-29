@@ -130,7 +130,7 @@ def run_mixnet():
     mix_endpoint = spec['mix_endpoints'].get(peer_id)
     if mix_endpoint:
         run_mix_endpoint(mix_endpoint)
-    time.sleep(3)
+    time.sleep(1)
 
 
 def create_endpoint(endpoint_spec):
