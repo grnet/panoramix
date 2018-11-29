@@ -7,12 +7,13 @@ from panoramix.config import cfg
 messages = sorted([('%02d' % i, 'user%s' % i) for i in range(100)])
 
 
+t_start = datetime.datetime.now()
 print "Sending"
 for message in messages:
     end_user.send_message(text=message[0], recipient=message[1])
 print "Sent messages"
 
-t_start = datetime.datetime.now()
+t_sent = datetime.datetime.now()
 
 mixnet_url = cfg.get('MIXNET_URL').rstrip('/')
 endpoint_prefix, endpoint_id = mixnet_url.rsplit('/', 1)
@@ -47,4 +48,6 @@ while True:
         time.sleep(1)
 
 t_end = datetime.datetime.now()
-print "Time elapsed", (t_end - t_start).total_seconds()
+print "Time sending", (t_sent - t_start).total_seconds()
+print "Time mixing", (t_end - t_sent).total_seconds()
+print "Time total", (t_end - t_start).total_seconds()
