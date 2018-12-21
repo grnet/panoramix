@@ -130,6 +130,13 @@ class SphinxmixClient(object):
     def peer_create(self, name, crypto_params, key_data, owners=None):
         if owners is None:
             owners = []
+
+        owners_data = []
+        for i, owner in enumerate(owners):
+            owners_data.append(
+                {'position': i,
+                 'owner_key_id': owner})
+
         crypto_params = json.dumps(crypto_params)
         data = {
             'name': name,
@@ -138,7 +145,7 @@ class SphinxmixClient(object):
             'key_type': sphinxmix_backend.key_type,
             'crypto_backend': sphinxmix_backend.BACKEND_NAME,
             'crypto_params': crypto_params,
-            'owners': owners,
+            'owners': owners_data,
         }
         r = self.peers.create(data)
         if r.status_code != 201:
@@ -148,6 +155,11 @@ class SphinxmixClient(object):
     def peer_create_combined(self, name, crypto_params, owners):
         key_data = self.crypto_client.combine_keys(owners)
         return self.peer_create(name, crypto_params, key_data, owners)
+
+    def get_owners(self, peer):
+        owners_data = peer['owners']
+        owners_data = sorted(owners_data, key=lambda data:data['position'])
+        return [data['owner_key_id'] for data in owners_data]
 
     def peer_get(self, peer_id):
         r = self.peers.get(peer_id)

@@ -16,6 +16,7 @@ class Peer(models.Model):
 
 class Owner(models.Model):
     peer = models.ForeignKey(Peer, related_name='owners')
+    position = models.IntegerField()
     owner_key_id = models.CharField(max_length=255)
 
     class Meta:

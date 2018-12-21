@@ -27,12 +27,16 @@ PEERS = {
             '.field.collection.django': {},
             'model': 'panoramix_service.models.Owner',
             'bound': 'peer',
-            'flat': True,
-            'id_field': 'owner_key_id',
             '.flag.noupdate': {},
             'fields': {
+                'id': {
+                    '.field.serial': {}},
                 'owner_key_id': {
                     '.field.string': {},
+                    '.flag.noupdate': {}},
+                'position': {
+                    '.field.integer': {},
+                    '.flag.orderable': {},
                     '.flag.noupdate': {}},
             },
         },

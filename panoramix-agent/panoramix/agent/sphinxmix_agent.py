@@ -27,7 +27,6 @@ def mixnet_url_process(mixnet_url):
     if endpoint["endpoint_type"] != "SPHINXMIX_GATEWAY":
         abort("Not a SPHINXMIX_GATEWAY.")
 
-
     peer_id = endpoint["peer_id"]
     cfg.set_value("MIXNET_ID", peer_id)
     peer = client.peer_get(peer_id)
@@ -36,7 +35,7 @@ def mixnet_url_process(mixnet_url):
     print peer['crypto_params']
     crypto_params = json.loads(peer["crypto_params"])
     cfg.set_value("CRYPTO_PARAMS", crypto_params)
-    cfg.set_value("MIXERS", peer['owners'])
+    cfg.set_value("MIXERS", client.get_owners(peer))
 
 
 def send_message(text=None, recipient=None):

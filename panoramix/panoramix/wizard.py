@@ -182,7 +182,7 @@ def join_mixnet_wizard():
                    lambda: get_mixnet_peer(mixnet_name))
     min_size = on("MIN_SIZE", get_min_size)
     mix_peer = client.peer_get(mixnet_id)
-    mixers = mix_peer['owners']
+    mixers = client.get_owners(mix_peer)
     on("MIXNET_SPEC",
        lambda: sphinxmix_backend.make_description(
            mixnet_name, mixnet_id, mixers, 'admin', min_size))
