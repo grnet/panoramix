@@ -1,0 +1,5 @@
+{
+  "ROLE": "TRUSTEE", 
+  "SECRET_KEY": "-----BEGIN EC PRIVATE KEY-----\nMF8CAQEEGAaOgWYcs6BaR/FqU0fq28dBls/tmmDOVKAKBggqhkjOPQMBAaE0AzIA\nBHYmaqN21vf4QWBamzYW4ENWmabJV6oDdQr8kIABK3shKx26/7tSPipsjWn4G754\nTA==\n-----END EC PRIVATE KEY-----\n", 
+  "ENDPOINT": "http://127.0.0.1:8000/consensus/"
+}

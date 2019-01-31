@@ -1,0 +1,2 @@
+apimas-django>=0.4a3,<0.5
+consensus-client

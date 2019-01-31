@@ -1,0 +1,5 @@
+{
+  "ROLE": "ADMIN", 
+  "SECRET_KEY": "-----BEGIN EC PRIVATE KEY-----\nMF8CAQEEGIO+/E6oXKwPCzFljzFDKiOqtrtGVenXZ6AKBggqhkjOPQMBAaE0AzIA\nBBf29XfL0IaMAecdKDFYJ2sSW79rDMtTQ9ktdstiKN950barugBf9T8IU18i0cPT\nqA==\n-----END EC PRIVATE KEY-----\n", 
+  "ENDPOINT": "http://127.0.0.1:8000/consensus/"
+}
