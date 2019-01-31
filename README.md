@@ -62,7 +62,12 @@ and an Ember-based web interface.
 
 Each application that wishes to employ this tool must extend the trustpanel
 base package. As an example, the repository includes an extension for the
-Zeus E-voting System (directory zeus_trust).
+Zeus E-voting System (directory zeus_trust):
+
+  * `trust.py` - *Initialize and launche the trust panel.*
+  * `options.py` - *Configure the user actions for each configuration option.*
+  * `spec.py` - *Specify the configuration options.*
+
 
 ### Deployment
 
