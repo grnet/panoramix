@@ -77,6 +77,11 @@ Extensions for other applications must be registered in the file
 `docker/services.conf`.
 
 
+## Panoramix Horizon 2020
+
+This project has received funding from the European Union’s Horizon 2020
+Research and Innovation Programme under Grant Agreement No 653497.
+
 ## Copyright and license
 
 Copyright (C) 2016-2019 GRNET S.A.
