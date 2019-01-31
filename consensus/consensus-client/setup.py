@@ -12,16 +12,19 @@ def get_requirements():
             if x and x[0] != '#'
         ]
 
+version_file = os.path.join(CURPATH, "..", "..", "version.txt")
+with open(version_file) as f:
+    version = f.read().strip()
+
 package_name = 'consensus-client'
-description = 'A negotiation and consensus service client'
-version = '0.1'
+description = 'Panoramix negotiation and consensus service client'
 
 setup(
     name=package_name,
     version=version,
     license='Affero GPL v3',
     author='GRNET S.A.',
-    author_email='zeus@dev.grnet.gr',
+    author_email='panoramix@dev.grnet.gr',
     description=description,
     packages=find_packages(),
     install_requires=get_requirements()
