@@ -1,0 +1,5 @@
+apimas-django>=0.4a3,<0.5
+apimas>=0.4a3,<0.5
+specular>=0.4a3,<0.5
+flask
+flask-cors
