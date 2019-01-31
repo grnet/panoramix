@@ -1,0 +1,383 @@
+@import 'ember-paper';
+@import 'ember-paper-expansion-panel';
+@import 'contrast';
+
+$hover-color: #555 !default;
+$border-color: lighten($hover-color, 20);
+
+$state_colors: (
+  conflict: orangered,
+  done: forestgreen,
+  finish: gold,
+  wait: forestgreen,
+  consent: gold,
+  propose: lightblue,
+  enhance: gold,
+  autoclose: gold,
+  undefined: lightgray,
+  no_transition: lightgray
+);
+
+$state_width: 15px;
+
+$bgTransition: background-color 0.4s $swift-ease-in-out-timing-function;
+$borderTransition: border-color 0.4s $swift-ease-in-out-timing-function;
+
+
+div#app {
+}
+
+body > div.ember-view {
+  height: 100%;
+  overflow: auto;
+}
+
+body, html {
+  background-color: #F6F7FC;
+  max-height: 100%;
+  min-height: 100%;
+  position: relative;
+  height: 100%;
+}
+
+md-toast.md-warn .md-toast-content {
+  background-color: paper-color($warn, "600");
+
+}
+
+md-dialog-content.positions {
+  padding: 0;
+  pre.value {
+    padding: 15px;
+    text-align: center;
+    font-size: 1.5rem;
+    border-bottom: 1px solid #efefef;
+    margin: 0;
+  }
+
+  div.proposed {
+    padding: 10px;
+    background-color: #efefef;
+    .label {
+    }
+    .peer { font-weight: bold; }
+  }
+
+  .peers-header {
+    color: black;
+    background-color: #efefef;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.9rem;
+    padding: 10px;
+    margin: 0;
+  }
+  .consent {
+    .layout-row.peer {
+      border-bottom: 1px solid #ddd;
+    }
+    .peer {
+      color: black;
+      .peer, .status, pre {
+        font-size: 0.9rem;
+        padding: 10px;
+        margin:0 ;
+      }
+      font-weight: bold;
+      border-right: 1px solid #efefef;
+      background-color: #efefef;
+    }
+    .status { text-align: right; }
+    .status span { display: inline-block; padding: 4px; }
+    .status .consent {
+      background-color: map-get($state_colors, 'done');
+      color: white;
+    }
+    .status .propose {
+      background-color: map-get($state_colors, 'propose');
+      color: white;
+    }
+    .status .conflict {
+      background-color: map-get($state_colors, 'conflict');
+      color: white;
+    }
+  }
+
+  div.agree {
+    .peer {}
+  }
+}
+
+md-toolbar.main {
+  padding-top: 30px;
+  .md-toolbar-tools {
+    max-height: none;
+    height: inherit;
+    padding-bottom: 10px;
+  }
+}
+
+md-toolbar .header {
+  p { margin: 0; font-family: monospace; font-size: 0.8rem;}
+  h2 { font-weight: bold; }
+  span.label {
+    color: lighten(white, 25) !important;
+    margin-right: 5px;
+  }
+  span.value { font-weight: bold; margin-right: 15px;}
+}
+
+$computeColor : darken(map-get($state_colors, 'propose'), 15);
+$lockDictColor : map-get($state_colors, 'finish');
+button .layout-row md-icon { margin: 0; }
+button.md-button.md-primary
+{
+  &.compute, &.lock-dict {
+    &[disabled] {
+      background-color: rgba(0, 0, 0, 0.12);
+      color: rgba(0, 0, 0, 0.38);
+    };
+    background-color: $computeColor;
+    color: choose-contrast-color($computeColor);
+    md-icon {
+      color: choose-contrast-color($computeColor) !important;
+    }
+  }
+  &.lock-dict {
+    background-color: $lockDictColor;
+    color: choose-contrast-color($lockDictColor) !important;
+    .layout-row md-icon {
+      color: choose-contrast-color($lockDictColor) !important;
+    }
+  }
+}
+
+h2.user_label {
+  color: #aaa;
+}
+
+.panels {
+
+  md-expansion-panel.disabled {
+    opacity: 0.5;
+    background-color: #efefef;
+    margin-top: 0.6rem;
+  }
+  md-expansion-panel md-expansion-panel-content.stage {
+    padding: 0;
+    .stage-key {
+      &:last-of-type { border-bottom: none; }
+    }
+  }
+
+  .stage-key + md-list { padding: 0; }
+  .stage-key.nested {
+    font-size: 0.8rem;
+  }
+
+  md-expansion-panel md-list-item .md-no-style {
+    padding: 0 16px;
+  }
+
+  .stage-key .value-cont {
+  }
+
+  .stage-key md-icon.locked { margin-left: 10px; }
+  .stage md-icon.lock,
+  .stage md-icon.unlock { opacity: 0.5; font-size: 16px; margin-left: 10px; }
+  .stage {
+    .value-row {
+      overflow: hidden;
+    }
+    .instance-label {
+      font-weight: bold;
+    }
+    .instance {
+      font-weight: bold;
+      color: map-get($state_colors, 'done');
+      margin-left: 5px;
+    }
+  }
+
+  .stage.state-done {
+    box-shadow: none;
+    background-color: #efefef;
+    .stage-key {
+      &:hover {
+        background-color: #ccc;
+      }
+    }
+  }
+
+  .stage .state-button {
+    position: absolute;
+    left: - $state_width;
+    height: 100%;
+    cursor: pointer;
+    width: $state_width;
+  }
+
+  .stage > md-list-item,
+  .stage, .stage-doc, .stage-key, state-button {
+    transition: $borderTransition, $bgTransition;
+  }
+
+  @each $status, $color in $state_colors {
+    .stage-doc.state-#{$status} {
+      border-left: $state_width solid $color;
+    }
+    .stage-key.state-#{$status} {
+      .state-button:hover {
+        background-color: darken($color, 15);
+      }
+      position: relative;
+      border-left: $state_width solid $color;
+      &:hover {
+        background-color: lighten($color, 5);
+        color: choose-contrast-color(darken($color, 10));
+      }
+    }
+    .stage.state-#{$status} > md-list-item,
+    .stage.state-#{$status} > md-expansion-panel-content {
+      border-left: $state_width solid $color;
+    }
+    button.to-state-#{$status} {
+      background-color: $color !important;
+      color: choose-contrast-color(darken($color, 10)) !important;
+      &[disabled] {
+        background-color: rgba(0, 0, 0, 0.12) !important;
+        color: rgba(0, 0, 0, 0.38) !important;
+      }
+    }
+    .stage.state-#{$status} .state-label {
+      margin-right: 10px;
+      color: $color;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+  }
+  button.to-state-enhance {
+    border-left: 8px solid map-get($state_colors, 'propose');
+  }
+
+
+  .stage .consensus_id {
+    text-align: right;
+    font-size: 0.7rem;
+    .label {
+      color: #999;
+    }
+    .value {
+      font-weight: bold;
+      margin-left: 5px;
+      color: map-get($state_colors, 'done');
+    }
+  }
+
+  .stage .stage-doc {
+    md-list { padding: 0 !important; }
+    .stage-key .label-cont .label { font-weight: normal !important; }
+  }
+
+  .stage-key {
+    .md-list-item-inner {
+      min-width: 0;
+      .doc-item-value {
+        white-space: nowrap;
+        overflow: auto;
+      }
+    }
+    .label-cont {
+      .label {
+        font-weight: bold;
+        font-size: 0.9rem;
+      }
+      .help-text {
+        font-size: 0.7rem;
+        color: #aaa;
+        margin-top: 3px;
+      }
+    }
+    .value-cont {
+      font-size: 0.8rem;
+      overflow: hidden;
+      flex-shrink: 1;
+      text-overflow: ellipsis;
+      max-width: 50%;
+      margin: 0;
+      .md-errors-spacer { display: none; }
+    }
+    .doc-item-value {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      button {
+        font-size: 0.6rem;
+        padding: 0 10px;
+      }
+    }
+
+  }
+}
+
+.advanced {
+  .window-actions {
+    border-bottom: 1px solid #efefef;
+    pre {
+      margin: 0;
+      padding: 10px;
+      border-right: 1px solid #efefef;
+      cursor: pointer;
+    }
+    pre.action {
+      &:hover { background-color: $hover-color; }
+    }
+    .main-action, .stage {
+      text-transform: uppercase;
+      border-left: 1px solid #efefef;
+      border-right: 0px solid #efefef;
+      background-color: darkolivegreen;
+      padding: 10px 3rem;
+    }
+    .stage {
+      background-color: SlateGray ;
+      text-align: center;
+      border-left: none;
+    }
+  }
+  .clickable { cursor: pointer }
+
+  .doc-item {
+    border-color: $hover-color;
+    border-style: solid;
+    border-width: 0px;
+    display: inline-block;
+    width: 100%;
+    pre { padding: 10px; margin: 0; position: relative }
+    &.expanded > pre { color: lightyellow }
+    @for $i from 0 through 15 {
+      &.nested-#{$i} pre { border-left: (0px + ($i * 5px)) solid darken($border-color, $i * 4); }
+    }
+    pre:hover { background-color: $hover-color; }
+    span { margin-right: 5px; }
+    .value-cont { bottom: 10px; font-weight: bold; color: yellow; position: absolute; right: 80px; }
+    .path { font-weight: bold; }
+    .type { position: absolute; right: 20px; color: #e0ffff; top: 10px;}
+    .actions { color: gold; font-size: 1rem; }
+
+    .doc-item-value {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      select, button, input {
+        border: none;
+        -webkit-border-radius: 0;
+        -moz-border-radius: 0;
+        border-radius: 0;
+        border-radius: none;
+        font-size: 0.8rem;
+        font-family: monospace;
+      }
+    }
+  }
+}
+

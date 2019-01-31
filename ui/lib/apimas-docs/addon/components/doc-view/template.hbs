@@ -1,0 +1,70 @@
+{{#each-in doc as |itemKey itemValue|}}
+  {{#with (doc-params doc path itemKey itemValue (get meta (concat path '/' itemKey))) as |item|}}
+    {{#with (hash
+      item=(component
+        itemComponent
+        root=path
+        tagName=itemTagName
+        doc=item.value
+        key=item.key
+        meta=(get meta item.path)
+        path=item.path
+        root=item.root
+        type=item.type
+        isDoc=item.isDoc
+        completed=(if completed completed (get meta (concat item.path '.completed')))
+        disabled=(if disabled disabled (get meta (concat item.path '.disabled')))
+        depth=depth
+        expanded=(contains item.path expandedPaths)
+        expandPath=(action 'expandPath' item.path)
+        collapsePath=(action 'collapsePath' item.path)
+        onClick=(if item.isDoc (action onItemClick item))
+        onChange=(action onValueChange item)
+        onLock=(action onKeyLock item)
+      )
+      doc=(if
+        item.isDoc
+        (component
+          docComponent
+          root=path
+          doc=item.value
+          meta=meta
+          completed=(if completed completed (get meta (concat item.path '.completed')))
+          disabled=(if disabled disabled (get meta (concat item.path '.disabled')))
+          tagName=docTagName
+          itemTagName=itemTagName
+          docTagName=docTagName
+          itemComponent=itemComponent
+          expandedPaths=expandedPaths
+          expandPath=(action 'expandPath' item.path)
+          collapsePath=(action 'collapsePath' item.path)
+          onItemClick=onItemClick
+          onValueChange=onValueChange
+          onKeylock=onKeyLock
+          key=item.key))
+      expanded=(contains item.path expandedPaths)
+      completed=(if completed completed (get meta (concat item.path '.completed')))
+      disabled=(if disabled disabled (get meta (concat item.path '.disabled')))
+      meta=(get meta item.path)
+      data=item)
+      as |itemParams|
+    }}
+
+      {{#if hasBlock}}
+        {{ yield itemParams }}
+      {{else}}
+        {{#itemParams.item }}
+          {{#if item.isDoc}}
+            {{#if itemParams.expanded}}
+              {{itemParams.doc}}
+            {{/if}}
+          {{/if}}
+        {{~else}}
+          {{#if item.isDoc}}
+            {{~#if itemParams.expanded}}&downarrow;{{~else}}&rightarrow;{{~/if}}
+          {{/if}}
+        {{/itemParams.item}}
+      {{/if}}
+    {{/with}}
+  {{/with}}
+{{/each-in}}

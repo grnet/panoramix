@@ -1,0 +1,23 @@
+{{# if (eq meta.action "choices") }}
+  <select onchange={{ action onChange value="target.value" }} value={{ doc }}>
+  <option value=""></option>
+  {{#each meta.choices as |choice|}}
+    <option value={{ choice }} selected={{ eq choice value }}>{{ choice }}</option>
+  {{/each}}
+  </select>
+{{/if}}
+{{# if (eq meta.action "compute_element") }}
+  <button onclick={{ action 'onButtonClick' }}>{{if meta.label meta.label "compute element"}}</button>
+{{/if }}
+{{#if (eq meta.mode "auto")}}
+{{ value }}
+{{/if}}
+{{#if (and (eq meta.type "string") (not meta.action))}}
+{{ input value=value focusOut=( action 'updateValue' ) }}
+{{/if}}
+{{#if (and (eq meta.type "int") (not meta.action))}}
+{{ input value=value type="number" focusOut=(action 'updateValue') }}
+{{/if}}
+{{#if (not meta) }}
+{{ value }}
+{{/if}}

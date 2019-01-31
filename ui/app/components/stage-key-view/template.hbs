@@ -1,0 +1,23 @@
+<md-list-item tabindex="-1" role="listitem" class={{ concat "stage-key " stateCls " " (if (gt depth 2) (concat "nested-" depth " nested"))}}>
+  {{#if (and (not isDoc) meta.positions) }}<div class="state-button" onclick={{action showStatus path label}}></div>{{/if}}
+  <div class="md-no-style layout-row md-list-item-inner md-ink-ripple inner">
+    <div class="label-cont flex layout-column">
+      <span class="label">{{label}}{{#if meta.dict_locked }}{{paper-icon "lock" class="locked"}}{{/if}}</span>
+      {{# if meta.help_text }}
+      <span class="help-text">{{ meta.help_text }}</span>
+      {{/if}}
+    </div>
+    <div class="value-cont flex layout-column">
+        {{#if (and (eq meta.state_label 'done') rawDocView) }}
+          {{if doc (if (not isDoc) doc) 'Not set'}}
+        {{else}}
+          {{paper-item-value classNames="layout-column" label=label value=doc meta=meta onChange=onChange onLock=onLock}}
+        {{/if}}
+    </div>
+  </div>
+</md-list-item>
+{{#if isDoc}}
+<div class={{ concat "stage-doc " stateCls " " (if (gt depth 2) (concat "nested-" depth " nested")) }}>
+{{ yield }}
+</div>
+{{/if}}

@@ -1,0 +1,97 @@
+<div class="layout-row value-row">
+  {{#if (eq meta.action "choices") }}
+    {{#paper-select
+      selected=value
+      onChange=onChange
+      options=choices
+      placeholder=(if meta.placeholder meta.placeholder label)
+      class="flex-grow"
+    as |choice|
+    }}
+      {{ choice }}
+    {{/paper-select}}
+  {{/if}}
+  {{#if (eq meta.action "compute_element") }}
+    <span class="flex" />
+    {{#paper-button
+      disabled=(or meta.action_disabled meta.dict_locked)
+      class="compute"
+      primary=true
+      raised=true
+      onClick=(action "onButtonClick")
+    }}
+      <div class="layout-row layout-align-space-around-center">
+        {{paper-icon (if meta.icon meta.icon "add") size=12 }}<span class="flex">{{ meta.label }}</span>
+      </div>
+    {{/paper-button}}
+  {{/if}}
+  {{#if meta.lock_action }}
+    {{#paper-button
+      disabled=meta.dict_locked
+      class="locked-dict"
+      primary=true
+      raised=true
+      onClick=(action "onLockClick")
+    }}
+      <div class="layout-row layout-align-space-around-center">
+        {{paper-icon (if meta.icon meta.icon "lock") size=12 }}<span class="flex">lock</span>
+      </div>
+    {{/paper-button}}
+  {{/if}}
+
+
+  {{#if
+    (and
+      (not (eq meta.mode "auto"))
+      (not meta.action)
+      (not (eq meta.type "file"))
+    )
+  }}
+    {{#if (eq meta.type "datetime")}}
+      {{ember-flatpickr
+        allowInput=true
+        appendDataInput=true
+        classNames=classString
+        date=(readonly textValue)
+        enableTime=true
+        minDate=minDate
+        dateFormat="d/m/Y H:i"
+        defaultHour=00
+        defaultMinute=00
+        time_24hr=true
+        focusOut=(action "updateValue")
+        onClose=(action "updateDateValue")
+        onChange=(queue (action (mut textValue)))
+        placeholder="Pick date"
+      }}
+    {{/if}}
+    {{#if
+      (and
+        (or (eq meta.type "string") (eq meta.type "int"))
+      )
+    }}
+      {{paper-input
+        class="flex"
+        type="string"
+        placeholder=(if meta.placeholder meta.placeholder "")
+        value=textValue
+        focusOut=(action "updateValue")
+        focused=focused
+        onChange=(queue (action (mut textValue)))
+      }}
+    {{/if}}
+  {{else}}
+    {{#if (not (eq meta.action "choices"))}}
+      {{#if (eq meta.type "file")}}
+        <a href={{jsonValue.link}} target="_blank">{{ jsonValue.hash }}</a>
+      {{/if}}
+      {{#if (eq meta.type "string")}}
+        {{ value }}
+      {{/if}}
+      {{#if (eq meta.type "int")}}
+        {{ value }}
+      {{/if}}
+    {{/if}}
+  {{/if}}
+  {{yield}}
+</div>

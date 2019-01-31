@@ -1,0 +1,15 @@
+{{#each-in stages as |id stage|}}
+  {{stage-view
+    stage=stage
+    meta=(get stage.meta stage.path)
+    expandedPaths=allPaths
+    tagName=''
+    expanded=(if stage.running true (contains stage.path expandedPaths))
+    expandPath=expandPath
+    collapsePath=collapsePath
+    onValueChange=onValueChange
+    onKeyLock=onKeyLock
+    showStatus=(action showStatus stage.id)
+    actionDisabled=actionDisabled
+    docAction=docAction}}
+{{/each-in}}

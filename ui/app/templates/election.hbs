@@ -1,0 +1,122 @@
+<div id="app">
+{{#paper-toolbar class="main" as |toolbar|}}
+  {{#toolbar.tools}}
+    <div class="header layout-column">
+      <h2 class="flex">{{ appTitle }}</h2>
+      <p class="layout-column">
+        <div class="layout-row">
+        <span class="label">mode:</span><span class="value">Zeus Election</span>
+        </div>
+        <div class="layout-row">
+        <span class="label">negotiation:</span><span class="value">{{ appSubtitle }}</span>
+        </div>
+      </p>
+    </div>
+    <span class="flex" />
+    {{#if manual}}
+      {{#if (not refreshModels.isRunning) }}
+        {{#paper-button onClick=(action "reloadModel") iconButton=true}}{{paper-icon "refresh"}}{{/paper-button}}
+        {{#paper-button
+          iconButton=true
+          onClick=(queue
+            (action (mut manualRefresh) false)
+            (perform refreshModels))
+        }}
+          {{paper-icon "play_arrow"}}
+        {{/paper-button}}
+      {{else}}
+        {{#paper-button
+          iconButton=true
+          warn=true
+          onClick=(action (mut manualRefresh) true)
+        }}
+          {{paper-icon "stop"}}
+        {{/paper-button}}
+      {{/if}}
+    {{else}}
+      {{#if (not refreshModels.isRunning) }}
+          {{#paper-button
+            iconButton=true
+            onClick=(queue
+              (action (mut manualRefresh) false)
+              (perform refreshModels))
+          }}
+            {{paper-icon "play_arrow"}}
+          {{/paper-button}}
+      {{/if}}
+    {{/if}}
+  {{/toolbar.tools}}
+{{/paper-toolbar}}
+
+<div class="layout-row md-padding panels">
+  {{#each-in model as |user stages|}}
+    <div class="flex flex-grow md-padding">
+      {{#if (gt users.length 1) }}
+        <h3 class="user_heading">{{ user }}</h3>
+      {{/if}}
+      {{election-view
+        stages=stages
+        expandPath=(action 'expandPath')
+        expandedPaths=expandedPaths
+        collapsePath=(action 'collapsePath')
+        docAction=(action 'docAction' user)
+        onValueChange=(action 'onValueChange' user)
+        onKeyLock=(action 'onKeyLock' user)
+        showStatus=(action 'showStatus' user)
+        actionDisabled=updateInProgress
+      }}
+    </div>
+  {{/each-in}}
+</div>
+
+{{#if showDialog}}
+  {{#paper-dialog
+    class="flex-gt-xs-50"
+    onClose=(action "hideStatus" "cancel")
+    origin=dialogOrigin
+    clickOutsideToClose=true
+  }}
+    {{#paper-toolbar class=(concat "state-" analysis.meta.label) }}
+      {{#paper-toolbar-tools}}
+        <h2>{{ analysis.path }}</h2>
+        <span class="flex"></span>
+        {{#paper-button iconButton=true onClick=(action "hideStatus" "cancel")}}{{paper-icon icon="close"}}{{/paper-button}}
+      {{/paper-toolbar-tools}}
+    {{/paper-toolbar}}
+
+    {{#paper-dialog-content class="positions"}}
+      <div class="consent layout-column">
+        <h3 class="peers-header">Peers</h3>
+        {{#each-in analysis.meta.positions as |peer data|}}
+        <div class="layout-row peer">
+          <span class="peer flex-30">{{ peer }}</span>
+          <pre class="flex">{{ data.value }}</pre>
+          {{ log analysis.meta.label peer data }}
+          <div class="flex-30 status">
+            {{#if data.proposed }}
+              {{#if data.proposing}}
+                <span class="propose proposing">proposing</span>
+              {{else}}
+                <span class="propose">proposed</span>
+              {{/if}}
+            {{/if}}
+            {{#if data.consented }}
+              {{#if data.consenting}}
+                <span class="consent consenting">consenting</span>
+              {{else}}
+                <span class="consent">consented</span>
+              {{/if}}
+            {{/if}}
+            {{#if data.conflict }}
+                <span class="conflict">conflict</span>
+            {{/if}}
+          </div>
+        </div>
+        {{/each-in}}
+      </div>
+    {{/paper-dialog-content}}
+  {{/paper-dialog}}
+{{/if}}
+
+{{paper-toaster parent="#app"}}
+</div>

@@ -1,0 +1,2 @@
+<pre onclick={{ onClick }} class={{ if isDoc 'clickable' ''}}><span class="path">{{ path }}</span><span class="actions">{{ yield to="inverse"}}</span>{{#if (or (eq meta.action "compute_element") (not isDoc)) }}<span class="value-cont">{{#if (not isDoc)}}<span class="value-arrow">=</span>{{/if}}{{doc-item-value value=doc meta=meta analysis=analysis onChange=onChange tagName="span"}}</span>{{/if}}<span class="type">{{type}}</span></pre>
+{{ yield }}

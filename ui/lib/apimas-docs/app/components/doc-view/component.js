@@ -1,0 +1,1 @@
+export { default } from 'apimas-docs/components/doc-view/component';

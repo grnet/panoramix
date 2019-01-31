@@ -1,0 +1,106 @@
+{{#if (not stage.pending) }}
+  {{#paper-expansion-panel
+    class=(concat
+      (if (and stage.running (not meta.state_label)) "state-undefined " "")
+      (if meta.state_label
+        (concat "state-" meta.state_label " ")
+      )
+      " stage"
+    )
+    expanded=expanded
+    onExpandedChange=(action expandPath stage.path)
+  as |panel|
+  }}
+    {{#panel.collapsed}}
+      <div class="stage-header layout-column flex">
+        <div class="layout-row flex">
+          <div class="md-panel-title">{{meta.title}}</div>
+          <div class="md-panel-summary flex flex-grow">{{meta.description}}</div>
+          {{paper-icon "keyboard_arrow_down"}}
+          {{#if stage.completed}}
+            {{paper-icon "lock" class="lock"}}
+          {{else}}
+            {{paper-icon "lock_open" class="unlock"}}
+          {{/if}}
+        </div>
+        <div class="layout-row meta">
+          {{#if stage.negotiation}}
+            <div class="negotiation_id consensus_id"><span class="label">negotiation</span><span class="value">{{stage.negotiation}}</span></div>
+          {{/if}}
+          {{#if stage.consensus_id }}
+            <div class="consensus_id flex"><span class="label">consensus</span><span class="value">{{stage.consensus_id}}</span></div>
+          {{/if}}
+        </div>
+      </div>
+    {{/panel.collapsed}}
+    {{#panel.expanded as |expanded|}}
+      {{#expanded.header}}
+        <div class="stage-header layout-column flex">
+          <div class="layout-row flex">
+            <div class="md-panel-title">{{meta.title}}</div>
+            <div class="md-panel-summary flex flex-grow">{{meta.description}}</div>
+            {{paper-icon "keyboard_arrow_down"}}
+            {{#if stage.completed}}
+              {{paper-icon "lock" class="lock"}}
+            {{else}}
+              {{paper-icon "lock_open" class="unlock"}}
+            {{/if}}
+          </div>
+          <div class="layout-row meta">
+            {{#if stage.negotiation}}
+              <div class="negotiation_id consensus_id"><span class="label">negotiation</span><span class="value">{{stage.negotiation}}</span></div>
+            {{/if}}
+            {{#if stage.consensus_id }}
+              <div class="consensus_id flex"><span class="label">consensus</span><span class="value">{{stage.consensus_id}}</span></div>
+            {{/if}}
+          </div>
+        </div>
+      {{/expanded.header}}
+      {{#expanded.content class="stage"}}
+        {{doc-view
+          root=""
+          key=stage.id
+          doc=stage.document
+          meta=stage.meta
+          tagName="div"
+          docTagName="md-list"
+          itemTagName=""
+          expandedPaths=expandedPaths
+          itemComponent=(component "stage-key-view" showStatus=showStatus)
+          onValueChange=(action onValueChange stage.id)
+          onKeyLock=(action onKeyLock stage.id)
+        }}
+      {{/expanded.content}}
+      {{#if (not stage.completed) }}
+        {{#expanded.footer}}
+          {{#if (gt stage.instance 1)}}
+            <span class="instance-label">RUN</span><span class="instance">{{ stage.instance }}</span>
+          {{/if}}
+          <span class="flex"></span>
+          {{#if (not stage.completed)}}
+            {{#if canAction }}
+              {{#paper-button
+                class=actionCls
+                disabled=(or actionDisabled (not canAction))
+                primary=true
+                raised=true
+                onClick=(action docAction stage.id)
+              }}
+                {{ actionLabel }}
+              {{/paper-button}}
+            {{else}}
+              <span class="state-label">{{ actionLabel }}</span>
+            {{/if}}
+          {{/if}}
+        {{/expanded.footer}}
+      {{/if}}
+    {{/panel.expanded}}
+  {{/paper-expansion-panel}}
+{{else}}
+  <md-expansion-panel class="disabled">
+    {{#paper-item}}
+      <div class="md-panel-title">{{meta.title}}</div>
+      <div class="md-panel-summary">{{meta.description}}</div>
+    {{/paper-item}}
+  </md-expansion-panel>
+{{/if}}

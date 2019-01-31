@@ -1,0 +1,22 @@
+<div class="layout-row window-actions">
+<pre class="flex action flex-initial" onclick={{action "expandAll"}}>EXPAND</pre>
+<pre class="flex action flex-initial" onclick={{action "collapseAll"}}>COLLAPSE</pre>
+<pre class="flex action flex-initial" onclick={{action "reloadModel"}}>RELOAD</pre>
+<pre class="flex flex stage">{{ model.meta.root.stage }}</pre>
+<pre class="flex flex-initial action main-action" onclick={{action "docAction" model.meta.root.stage }}>{{ model.meta.root.label }}</pre>
+</div>
+<div class="layout-column">
+{{doc-view
+  tagName='div'
+  itemTagName='div'
+  docTagName='div'
+  doc=model.stages
+  meta=model.meta
+  analysis=model.analysis
+  expandedPaths=expandedPaths
+  onExpand=(action 'expandPath')
+  onCollapse=(action 'collapsePath')
+  onItemClick=(action 'itemClick')
+  onValueChange=(action 'onValueChange')
+}}
+</div>

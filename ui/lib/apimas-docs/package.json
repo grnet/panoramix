@@ -1,0 +1,13 @@
+{
+  "name": "apimas-docs",
+  "keywords": [
+    "ember-addon"
+  ],
+  "dependencies": {
+    "@ember-decorators/babel-transforms": "^2.1.2",
+    "ember-cli-htmlbars": "^3.0.0",
+    "ember-cli-babel": "^6.17.2",
+    "ember-paper": "^1.0.0-beta.18",
+    "ember-paper-expansion-panel": "0.0.4"
+  }
+}
