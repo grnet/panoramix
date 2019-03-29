@@ -25,8 +25,8 @@
   "KEY": {
     "description": null, 
     "value": {
-      "SECRET": "325921CCF6B843DDD62D36FB14B8300605158C496F82B9B2E10A0DA8", 
-      "PUBLIC": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12"
+      "SECRET": "17F294F61FBD76D11EA75708B172ED73A4BA2AC464BA3E500FA7FCE1", 
+      "PUBLIC": "03dbb592837c9f8647063f0508b086fbf4971c9f3c59e3a412d6a45be4"
     }, 
     "title": "KEY"
   }, 
@@ -37,7 +37,7 @@
   }, 
   "PEER_ID": {
     "description": null, 
-    "value": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
+    "value": "03dbb592837c9f8647063f0508b086fbf4971c9f3c59e3a412d6a45be4", 
     "title": "PEER_ID"
   }, 
   "SETUP_ROLE": {
@@ -48,19 +48,19 @@
   "MIXERS_LIST": {
     "description": null, 
     "value": [
-      "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
-      "02ee59077b3250b34acf06050ba64e7bd15a387268adbcf2b823156dce"
+      "03dbb592837c9f8647063f0508b086fbf4971c9f3c59e3a412d6a45be4", 
+      "021729f05f0d09548a05b7c41fe4dbea98c02873b50b1ed0d2900c9800"
     ], 
     "title": "MIXERS_LIST"
   }, 
   "MIXNET_PEER": {
     "description": null, 
-    "value": "033fc6104d0f58a6e446383059de146b56792d05b88e3466ddfe787138", 
+    "value": "0327a4eb34641189269ccd9af8b18b06fefdef0edb831ebec0f06f0ba6", 
     "title": "MIXNET_PEER"
   }, 
   "MIXNET_NAME": {
     "description": null, 
-    "value": "mixep", 
+    "value": "mix", 
     "title": "MIXNET_NAME"
   }, 
   "MIN_SIZE": {
@@ -72,40 +72,40 @@
     "description": null, 
     "value": {
       "mix_endpoints": {
-        "02ee59077b3250b34acf06050ba64e7bd15a387268adbcf2b823156dce": {
+        "021729f05f0d09548a05b7c41fe4dbea98c02873b50b1ed0d2900c9800": {
           "endpoint_type": "SPHINXMIX", 
           "link": {
             "from_state": "ACCEPTED", 
-            "from_endpoint_id": "02a9e4f_for_ep_mixep"
+            "from_endpoint_id": "03dbb59_for_ep_mix"
           }, 
-          "description": "Mixing node for 'mixep'", 
-          "endpoint_id": "02ee590_for_ep_mixep", 
+          "description": "Mixing node for 'mix'", 
+          "endpoint_id": "021729f_for_ep_mix", 
           "endpoint_params": "{\n}\n", 
-          "admin": "02ee59077b3250b34acf06050ba64e7bd15a387268adbcf2b823156dce", 
-          "peer_id": "02ee59077b3250b34acf06050ba64e7bd15a387268adbcf2b823156dce", 
+          "admin": "021729f05f0d09548a05b7c41fe4dbea98c02873b50b1ed0d2900c9800", 
+          "peer_id": "021729f05f0d09548a05b7c41fe4dbea98c02873b50b1ed0d2900c9800", 
           "public": false
         }, 
-        "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12": {
+        "03dbb592837c9f8647063f0508b086fbf4971c9f3c59e3a412d6a45be4": {
           "endpoint_type": "SPHINXMIX", 
           "link": {
             "from_state": "ACCEPTED", 
-            "from_endpoint_id": "mixep"
+            "from_endpoint_id": "mix"
           }, 
-          "description": "Mixing node for 'mixep'", 
-          "endpoint_id": "02a9e4f_for_ep_mixep", 
+          "description": "Mixing node for 'mix'", 
+          "endpoint_id": "03dbb59_for_ep_mix", 
           "endpoint_params": "{\n}\n", 
-          "admin": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
-          "peer_id": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
+          "admin": "03dbb592837c9f8647063f0508b086fbf4971c9f3c59e3a412d6a45be4", 
+          "peer_id": "03dbb592837c9f8647063f0508b086fbf4971c9f3c59e3a412d6a45be4", 
           "public": false
         }
       }, 
       "input": {
-        "description": "Gateway for mixnet 'mixep'", 
+        "description": "Gateway for mixnet 'mix'", 
         "endpoint_params": "{\n}\n", 
-        "admin": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
+        "admin": "03dbb592837c9f8647063f0508b086fbf4971c9f3c59e3a412d6a45be4", 
         "endpoint_type": "SPHINXMIX_GATEWAY", 
-        "endpoint_id": "mixep", 
-        "peer_id": "033fc6104d0f58a6e446383059de146b56792d05b88e3466ddfe787138", 
+        "endpoint_id": "mix", 
+        "peer_id": "0327a4eb34641189269ccd9af8b18b06fefdef0edb831ebec0f06f0ba6", 
         "public": true
       }, 
       "size_min": 100, 
@@ -113,36 +113,36 @@
         "endpoint_type": "SPHINXMIX_OUTPUT", 
         "link": {
           "from_state": "ACCEPTED", 
-          "from_endpoint_id": "02ee590_for_ep_mixep"
+          "from_endpoint_id": "021729f_for_ep_mix"
         }, 
-        "description": "Output of mixnet 'mixep'", 
-        "endpoint_id": "mixep_output", 
+        "description": "Output of mixnet 'mix'", 
+        "endpoint_id": "mix_output", 
         "endpoint_params": "{\n}\n", 
-        "admin": "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
-        "peer_id": "033fc6104d0f58a6e446383059de146b56792d05b88e3466ddfe787138", 
+        "admin": "03dbb592837c9f8647063f0508b086fbf4971c9f3c59e3a412d6a45be4", 
+        "peer_id": "0327a4eb34641189269ccd9af8b18b06fefdef0edb831ebec0f06f0ba6", 
         "public": true
       }
     }, 
     "title": "MIXNET_SPEC"
   }, 
-  "ENDPOINT_02ee590_for_ep_mixep": {
+  "ENDPOINT_021729f_for_ep_mix": {
     "description": null, 
     "value": true, 
-    "title": "ENDPOINT_02ee590_for_ep_mixep"
+    "title": "ENDPOINT_021729f_for_ep_mix"
   }, 
-  "ENDPOINT_02a9e4f_for_ep_mixep": {
+  "ENDPOINT_03dbb59_for_ep_mix": {
     "description": null, 
     "value": true, 
-    "title": "ENDPOINT_02a9e4f_for_ep_mixep"
+    "title": "ENDPOINT_03dbb59_for_ep_mix"
   }, 
-  "ENDPOINT_mixep": {
+  "ENDPOINT_mix": {
     "description": null, 
     "value": true, 
-    "title": "ENDPOINT_mixep"
+    "title": "ENDPOINT_mix"
   }, 
-  "ENDPOINT_mixep_output": {
+  "ENDPOINT_mix_output": {
     "description": null, 
     "value": true, 
-    "title": "ENDPOINT_mixep_output"
+    "title": "ENDPOINT_mix_output"
   }
 }

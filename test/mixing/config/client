@@ -1,7 +1,7 @@
 {
   "MIXNET_URL": {
     "description": null, 
-    "value": "http://127.0.0.1:8000/panoramix/endpoints/mixep/", 
+    "value": "http://127.0.0.1:8000/panoramix/endpoints/mix/", 
     "title": "MIXNET_URL"
   }, 
   "CATALOG_URL": {
@@ -11,12 +11,12 @@
   }, 
   "ENDPOINT_ID": {
     "description": null, 
-    "value": "mixep", 
+    "value": "mix", 
     "title": "ENDPOINT_ID"
   }, 
   "MIXNET_ID": {
     "description": null, 
-    "value": "033fc6104d0f58a6e446383059de146b56792d05b88e3466ddfe787138", 
+    "value": "0327a4eb34641189269ccd9af8b18b06fefdef0edb831ebec0f06f0ba6", 
     "title": "MIXNET_ID"
   }, 
   "CRYPTO_PARAMS": {
@@ -31,16 +31,16 @@
   "MIXERS": {
     "description": null, 
     "value": [
-      "02a9e4f78b4df78cbe8fedc8ddefe4fc0310d49fc2726a08ad9039ec12", 
-      "02ee59077b3250b34acf06050ba64e7bd15a387268adbcf2b823156dce"
+      "03dbb592837c9f8647063f0508b086fbf4971c9f3c59e3a412d6a45be4", 
+      "021729f05f0d09548a05b7c41fe4dbea98c02873b50b1ed0d2900c9800"
     ], 
     "title": "MIXERS"
   }, 
   "KEY": {
     "description": null, 
     "value": {
-      "SECRET": "56578A2B0916726D8D6DA3A92C26AB6ECA772C540601179CEC3E3CED", 
-      "PUBLIC": "03c388b4d67cf94807204204e55f1ea5621b382279b16077758997a272"
+      "SECRET": "BD3700F7AAA7E87C6E52162FCDC6F58EBCD701D7459A3FA5A15AC4AA", 
+      "PUBLIC": "03d885928af002985d5e0c9d76472231970a02e1b0b8b69970b36a3c52"
     }, 
     "title": "KEY"
   }
