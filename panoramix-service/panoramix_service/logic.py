@@ -13,7 +13,7 @@ def get_endpoint_for_update(endpoint_id):
 
 def set_cycle(backend_input, instance, context):
     assert instance is None
-    kwargs = context.extract('request/meta/kwargs')
+    kwargs = context['request/meta/kwargs']
     endpoint_id = kwargs['id0']
     endpoint = get_endpoint_for_update(endpoint_id)
     if not endpoint.public:
