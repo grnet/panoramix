@@ -190,14 +190,14 @@ def process_message(message, params, secret):
     return SphinxNode.sphinx_process(params, secret, header, delta)
 
 
-def route_message(info, header, delta, params):
+def route_message(info, header, delta, mac_key, params):
     routing = SphinxClient.PFdecode(params, info)
     flag = routing[0]
     if flag == SphinxClient.Relay_flag:
         recipient = routing[1]
         return recipient, encode_message(mk_message(header, delta))
     elif flag == SphinxClient.Dest_flag:
-        return tuple(SphinxClient.receive_forward(params, delta))
+        return tuple(SphinxClient.receive_forward(params, mac_key, delta))
     raise ValueError("Unrecognized flag")
 
 
@@ -207,9 +207,10 @@ def process_sphinxmix(enc_messages, params, secret):
     processed = []
     for message in enc_messages:
         decoded = decode_message(message)
-        (tag, info, (header, delta)) = process_message(decoded, params, secret)
+        (tag, info, (header, delta), mac_key) = process_message(
+            decoded, params, secret)
         recipient, processed_message = route_message(
-            info, header, delta, params)
+            info, header, delta, mac_key, params)
         processed.append((recipient, processed_message))
     return processed, None
 
@@ -333,7 +334,7 @@ def get_default_crypto_params():
 
 def create_key(params):
     secret = params.group.gensecret()
-    public = params.group.expon(params.group.g, secret)
+    public = params.group.expon(params.group.g, [secret])
     return secret, public
 
 
